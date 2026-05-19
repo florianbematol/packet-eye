@@ -1,0 +1,9 @@
+# Project-level cargo config.
+# Tells the linker where to find Npcap SDK libraries on Windows x64.
+
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-L", "C:/npcap-sdk/Lib/x64"]
+
+[env]
+# Some pcap-rs builds also honour these env vars
+LIBPCAP_LIBDIR = { value = "C:/npcap-sdk/Lib/x64", force = false }

@@ -1,0 +1,239 @@
+// Capture controls panel: device picker, filter toggles, custom BPF, start/stop.
+
+import { useEffect, useState } from "react";
+import { Play, Square, RefreshCcw, AlertTriangle } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { api } from "@/lib/api";
+import { captureFilterToBpf } from "@/lib/bpf";
+import type { CaptureFilter, DeviceInfo } from "@/lib/types";
+
+interface Props {
+  running: boolean;
+  setRunning: (b: boolean) => void;
+}
+
+export default function CapturePanel({ running, setRunning }: Props) {
+  const [devices, setDevices] = useState<DeviceInfo[]>([]);
+  const [selected, setSelected] = useState<string>("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [filter, setFilter] = useState<CaptureFilter>({
+    include_lan: true,
+    include_localhost: true,
+    include_broadcast: true,
+    custom: null,
+  });
+
+  const refresh = async () => {
+    setError(null);
+    try {
+      const [devs, status] = await Promise.all([api.listDevices(), api.status()]);
+      setDevices(devs);
+      setRunning(status.running);
+      if (!selected) {
+        const preferred =
+          devs.find((d) => !d.is_loopback && d.addresses.length > 0) ?? devs[0];
+        if (preferred) setSelected(preferred.name);
+      }
+    } catch (e) {
+      setError(formatErr(e));
+    }
+  };
+
+  useEffect(() => {
+    refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const start = async () => {
+    if (!selected) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await api.startCapture(selected, filter);
+      setRunning(true);
+    } catch (e) {
+      setError(formatErr(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const stop = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await api.stopCapture();
+      setRunning(false);
+    } catch (e) {
+      setError(formatErr(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card className="glass w-[360px]">
+      <CardHeader className="pb-2 flex flex-row items-center justify-between space-y-0">
+        <CardTitle className="mono text-[11px] uppercase tracking-[0.25em] text-primary">
+          Capture
+        </CardTitle>
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-7 w-7"
+          onClick={refresh}
+          title="Refresh devices"
+          disabled={busy}
+        >
+          <RefreshCcw className="h-3.5 w-3.5" />
+        </Button>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">Interface</Label>
+          <Select
+            value={selected}
+            onValueChange={setSelected}
+            disabled={running || busy}
+          >
+            <SelectTrigger className="font-mono text-xs">
+              <SelectValue placeholder="Pick a device" />
+            </SelectTrigger>
+            <SelectContent className="font-mono text-xs">
+              {devices.map((d) => (
+                <SelectItem key={d.name} value={d.name}>
+                  {(d.description || d.name).slice(0, 60)}
+                  {d.is_loopback ? " (loopback)" : ""}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <Separator className="my-2" />
+
+        <div className="space-y-2">
+          <ToggleRow
+            label="Include LAN traffic (RFC1918)"
+            checked={!!filter.include_lan}
+            disabled={running || busy}
+            onChange={(v) => setFilter({ ...filter, include_lan: v })}
+          />
+          <ToggleRow
+            label="Include localhost"
+            checked={!!filter.include_localhost}
+            disabled={running || busy}
+            onChange={(v) => setFilter({ ...filter, include_localhost: v })}
+          />
+          <ToggleRow
+            label="Include broadcast / multicast"
+            checked={!!filter.include_broadcast}
+            disabled={running || busy}
+            onChange={(v) => setFilter({ ...filter, include_broadcast: v })}
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <Label className="text-xs text-muted-foreground">
+            Custom BPF (optional)
+          </Label>
+          <Input
+            placeholder="e.g. tcp port 443"
+            className="font-mono text-xs"
+            value={filter.custom ?? ""}
+            disabled={running || busy}
+            onChange={(e) =>
+              setFilter({ ...filter, custom: e.target.value || null })
+            }
+          />
+        </div>
+
+        {!running ? (
+          <Button
+            className="w-full"
+            onClick={start}
+            disabled={!selected || busy}
+          >
+            <Play className="mr-2 h-4 w-4" />
+            {busy ? "Starting…" : "Start capture"}
+          </Button>
+        ) : (
+          <Button
+            className="w-full"
+            variant="destructive"
+            onClick={stop}
+            disabled={busy}
+          >
+            <Square className="mr-2 h-4 w-4" />
+            {busy ? "Stopping…" : "Stop capture"}
+          </Button>
+        )}
+
+        {error && (
+          <div className="flex items-start gap-2 mono text-[11px] text-destructive">
+            <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            <span className="break-all">{error}</span>
+          </div>
+        )}
+
+        {/* Active BPF expression preview — what the agent will actually
+            ask Npcap to keep. Shown in muted small text so it doesn't
+            steal attention but lets the user understand what's filtered. */}
+        <div className="rounded-md border border-border/40 bg-secondary/20 px-2 py-1.5">
+          <div className="mono text-[9px] uppercase tracking-[0.25em] text-muted-foreground mb-0.5">
+            Active BPF
+          </div>
+          <code className="mono text-[10px] text-foreground/80 break-all whitespace-pre-wrap">
+            {captureFilterToBpf(filter) || "(no filter — capture everything)"}
+          </code>
+        </div>
+
+        <div className="mono text-[10px] text-muted-foreground/70 pt-1">
+          {running ? "● capturing" : "○ idle"} · {devices.length} interfaces
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ToggleRow({
+  label,
+  checked,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  disabled?: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-xs text-foreground/80">{label}</span>
+      <Switch checked={checked} disabled={disabled} onCheckedChange={onChange} />
+    </div>
+  );
+}
+
+function formatErr(e: unknown): string {
+  if (e instanceof Error) return e.message;
+  return String(e);
+}

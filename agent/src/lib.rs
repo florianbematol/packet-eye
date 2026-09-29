@@ -15,6 +15,7 @@ use anyhow::Result;
 use clap::Parser;
 use tokio::net::TcpListener;
 use tower_http::cors::{Any, CorsLayer};
+use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{fmt, EnvFilter};
 
@@ -50,6 +51,37 @@ pub struct Args {
     /// Allow any origin to call the API (handy for `vite dev`).
     #[arg(long, default_value_t = true)]
     pub permissive_cors: bool,
+
+    /// Directory containing the built web UI (`npm run build` output).
+    /// When found, the agent serves it at `/` so a single executable is
+    /// enough. Defaults to auto-detecting `dist/` next to the repo.
+    #[arg(long)]
+    pub ui: Option<std::path::PathBuf>,
+
+    /// Disable serving the web UI even if a `dist/` folder is found.
+    #[arg(long, default_value_t = false)]
+    pub no_ui: bool,
+}
+
+/// Find the built frontend. Order: `--ui`, `<cwd>/dist`, `<cwd>/../dist`,
+/// `<exe-dir>/dist`, `<exe-dir>/../../../dist` (agent/target/release).
+fn resolve_ui_dir(args: &Args) -> Option<std::path::PathBuf> {
+    let has_index = |p: &std::path::Path| p.join("index.html").is_file();
+    if let Some(p) = &args.ui {
+        return has_index(p).then(|| p.clone());
+    }
+    let mut candidates = Vec::new();
+    if let Ok(cwd) = std::env::current_dir() {
+        candidates.push(cwd.join("dist"));
+        candidates.push(cwd.join("..").join("dist"));
+    }
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            candidates.push(dir.join("dist"));
+            candidates.push(dir.join("..").join("..").join("..").join("dist"));
+        }
+    }
+    candidates.into_iter().find(|p| has_index(p))
 }
 
 pub async fn run(args: Args) -> Result<()> {
@@ -95,6 +127,22 @@ pub async fn run(args: Args) -> Result<()> {
     // Build router.
     let mut app = api::router(state.clone());
 
+    // Serve the built web UI (SPA) for every non-API path.
+    let ui_dir = if args.no_ui { None } else { resolve_ui_dir(&args) };
+    match &ui_dir {
+        Some(dir) => {
+            let dir = dir.canonicalize().unwrap_or_else(|_| dir.clone());
+            tracing::info!("serving web UI from {}", dir.display());
+            let index = dir.join("index.html");
+            app = app.fallback_service(
+                ServeDir::new(&dir).not_found_service(ServeFile::new(index)),
+            );
+        }
+        None => tracing::warn!(
+            "web UI not found (run `npm run build`, or pass --ui <dir>); serving API only"
+        ),
+    }
+
     // Tracing + CORS layers.
     let cors = if args.permissive_cors {
         CorsLayer::new()
@@ -108,6 +156,9 @@ pub async fn run(args: Args) -> Result<()> {
 
     let listener = TcpListener::bind(args.listen).await?;
     tracing::info!("listening on http://{}", args.listen);
+    if ui_dir.is_some() {
+        tracing::info!("open http://{} in your browser", args.listen);
+    }
     axum::serve(listener, app).await?;
     Ok(())
 }

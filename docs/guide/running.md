@@ -64,10 +64,15 @@ npm run build              # builds the SPA into ./dist
 npm run agent:build        # release binary in agent/target/release
 ```
 
-Serving the SPA from any static host (or even directly from `dist/`)
-works as long as the agent is reachable from the browser. Since the
-agent listens on `127.0.0.1` by default, the simplest deployment is
-"same machine".
+Then run **only the agent**, as Administrator, from the repo root:
+
+```powershell
+.\agent\target\release\packet-eye-agent.exe
+```
+
+The agent auto-detects `dist/` and serves the UI itself — open
+<http://127.0.0.1:8088>. Use `--ui <dir>` to point at another build
+folder, or `--no-ui` to expose the API only.
 
 ## Stopping
 

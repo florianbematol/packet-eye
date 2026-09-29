@@ -15,8 +15,16 @@ import type {
   ThreatStats,
 } from "@/lib/types";
 
+// Resolution order:
+//   1. VITE_AGENT_URL if set at build time.
+//   2. In production builds, the page's own origin — the agent serves the
+//      UI itself, so API + WS live on the same host:port.
+//   3. In `vite dev`, the default agent address.
 const BASE_URL =
-  (import.meta.env.VITE_AGENT_URL as string | undefined) ?? "http://127.0.0.1:8088";
+  (import.meta.env.VITE_AGENT_URL as string | undefined) ??
+  (!import.meta.env.DEV && typeof window !== "undefined"
+    ? window.location.origin
+    : "http://127.0.0.1:8088");
 
 async function request<T>(
   path: string,

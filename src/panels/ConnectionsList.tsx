@@ -86,7 +86,7 @@ const COLUMNS: ColumnDef[] = [
     sortable: true,
     defaultDir: "asc",
     compare: (a, b) =>
-      cmpStr(a.remote_hostname || a.remote_ip, b.remote_hostname || b.remote_ip) ||
+      cmpStr(a.remote_ip, b.remote_ip) ||
       cmpNum(a.remote_port, b.remote_port),
   },
   {
@@ -445,9 +445,13 @@ export default function ConnectionsList() {
                     </td>
                     <td
                       className="px-2 py-1.5 text-foreground/85 whitespace-nowrap overflow-hidden text-ellipsis"
-                      title={`${c.remote_hostname || c.remote_ip}:${c.remote_port}`}
+                      title={
+                        c.remote_hostname && c.remote_hostname !== c.remote_ip
+                          ? `${c.remote_ip}:${c.remote_port}\nDNS: ${c.remote_hostname}`
+                          : `${c.remote_ip}:${c.remote_port}`
+                      }
                     >
-                      {c.remote_hostname || c.remote_ip}
+                      {c.remote_ip}
                       <span className="text-muted-foreground/70">
                         :{c.remote_port}
                       </span>

@@ -98,40 +98,52 @@ export default function SelectedConnectionPanel() {
           </span>
         </div>
 
-        <div className="font-mono text-sm text-foreground/95 break-all">
-          {conn.remote_hostname || conn.remote_ip}
-          <span className="text-muted-foreground/70">:{conn.remote_port}</span>
-        </div>
-        {conn.remote_hostname && conn.remote_hostname !== conn.remote_ip && (
-          <div className="font-mono text-[10px] text-muted-foreground break-all">
+        {/* Remote endpoint — IP first, then geo, then hostname (if any) */}
+        <div className="space-y-0.5">
+          <div className="font-mono text-base text-foreground break-all">
             {conn.remote_ip}
+            <span className="text-muted-foreground/70">:{conn.remote_port}</span>
           </div>
-        )}
+          {(country || city) && (
+            <div className="font-mono text-xs text-foreground/70 flex items-center gap-1">
+              <Globe className="h-3 w-3 text-primary" />
+              {city && <span className="text-foreground/85">{city}</span>}
+              {city && country && (
+                <span className="text-muted-foreground/60">·</span>
+              )}
+              {country && (
+                <span>
+                  <span className="text-primary">{countryIso}</span>{" "}
+                  <span className="text-foreground/80">{country}</span>
+                </span>
+              )}
+            </div>
+          )}
+          {conn.remote_hostname &&
+            conn.remote_hostname !== conn.remote_ip && (
+              <div
+                className="font-mono text-[10px] text-muted-foreground break-all"
+                title="Reverse DNS hostname (not the server location)"
+              >
+                <span className="opacity-60">dns:</span> {conn.remote_hostname}
+              </div>
+            )}
+        </div>
 
         <Separator />
 
-        {/* Geo */}
-        <Row icon={<Globe className="h-3.5 w-3.5" />} label="Location">
-          {country ? (
-            <span>
-              <span className="text-primary">{countryIso}</span> {country}
-              {city && (
-                <>
-                  <span className="text-muted-foreground/70"> · </span>
-                  {city}
-                </>
-              )}
-            </span>
-          ) : (
-            <span className="text-muted-foreground/40">Unknown</span>
-          )}
-        </Row>
-
-        {(lat != null && lon != null) && (
+        {/* Coordinates with a Google Maps link */}
+        {lat != null && lon != null && (
           <Row icon={<MapPin className="h-3.5 w-3.5" />} label="Coordinates">
-            <span className="tabular-nums text-foreground/80">
-              {lat.toFixed(2)}, {lon.toFixed(2)}
-            </span>
+            <a
+              href={`https://www.google.com/maps?q=${lat},${lon}`}
+              target="_blank"
+              rel="noreferrer"
+              className="tabular-nums text-foreground/80 hover:text-primary underline-offset-2 hover:underline"
+              title="Open in Google Maps"
+            >
+              {lat.toFixed(4)}, {lon.toFixed(4)}
+            </a>
           </Row>
         )}
 

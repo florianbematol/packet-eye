@@ -1,17 +1,16 @@
-// Realistic Earth: NASA Blue Marble day texture + normal + specular maps,
-// wrapped in a multi-layer atmospheric Fresnel glow.
+// Realistic Earth: Natural Earth III 16K daymap + bump map + water mask
+// + nightlights + 8K cloud layer floating slightly above the surface.
 //
-// The Earth mesh is intentionally STATIC: we don't rotate the geometry
-// itself, otherwise the markers/arcs (placed in world space at geographic
-// lat/lon) would slide off the surface. To create a "rotating planet"
-// feel we instead let the OrbitControls autoRotate the whole camera —
-// this rotates the Earth AND its markers together.
+// Day texture is 16200×8100 (Natural Earth III, public domain). The
+// water mask (white on oceans, black on land) drives the specularity
+// so only oceans glint. The bump map gives mountains visible relief
+// at zoom-in. A separate cloud sphere rotates *very* slowly above the
+// surface to add depth. City lights are baked into the emissive map.
 //
-// Source of textures: https://threejs.org/examples/textures/planets/
-// (NASA imagery, public domain).
+// Sources: http://www.shadedrelief.com/natural3/ (public domain).
 
-import { useMemo } from "react";
-import { useLoader } from "@react-three/fiber";
+import { useMemo, useRef } from "react";
+import { useFrame, useLoader } from "@react-three/fiber";
 import * as THREE from "three";
 
 interface Props {
@@ -21,21 +20,24 @@ interface Props {
 export const EARTH_RADIUS = 1.5;
 
 const dayUrl = "/textures/earth-day.jpg";
-const normalUrl = "/textures/earth-normal.jpg";
-const specularUrl = "/textures/earth-specular.jpg";
+const bumpUrl = "/textures/earth-bump.jpg";
+const specularUrl = "/textures/earth-specular.png";
 const lightsUrl = "/textures/earth-lights.jpg";
+const cloudsUrl = "/textures/earth-clouds.jpg";
 
 export default function Earth({ radius = EARTH_RADIUS }: Props) {
-  const [dayMap, normalMap, specularMap, lightsMap] = useLoader(
+  const cloudsRef = useRef<THREE.Mesh>(null);
+
+  const [dayMap, bumpMap, specularMap, lightsMap, cloudsMap] = useLoader(
     THREE.TextureLoader,
-    [dayUrl, normalUrl, specularUrl, lightsUrl],
+    [dayUrl, bumpUrl, specularUrl, lightsUrl, cloudsUrl],
   ) as THREE.Texture[];
 
   useMemo(() => {
     [dayMap, lightsMap].forEach((t) => {
       if (t) t.colorSpace = THREE.SRGBColorSpace;
     });
-    [dayMap, normalMap, specularMap, lightsMap].forEach((t) => {
+    [dayMap, bumpMap, specularMap, lightsMap, cloudsMap].forEach((t) => {
       if (t) {
         t.anisotropy = 16;
         t.minFilter = THREE.LinearMipmapLinearFilter;
@@ -44,30 +46,48 @@ export default function Earth({ radius = EARTH_RADIUS }: Props) {
         t.needsUpdate = true;
       }
     });
-  }, [dayMap, normalMap, specularMap, lightsMap]);
+  }, [dayMap, bumpMap, specularMap, lightsMap, cloudsMap]);
 
-  // The texture is mapped so that lon=0 (Greenwich) lands at +Z. Our
-  // latLonToVec3 uses the same convention, so we don't need any rotation
-  // offset on the mesh itself.
+  // Slowly rotate the cloud layer for atmospheric realism.
+  useFrame((_, dt) => {
+    if (cloudsRef.current) {
+      cloudsRef.current.rotation.y += dt * 0.005;
+    }
+  });
+
   return (
     <group>
+      {/* Solid Earth */}
       <mesh>
         <sphereGeometry args={[radius, 256, 256]} />
         <meshPhongMaterial
           map={dayMap}
-          normalMap={normalMap}
-          normalScale={new THREE.Vector2(0.6, 0.6)}
+          bumpMap={bumpMap}
+          bumpScale={0.04}
           specularMap={specularMap}
-          specular={new THREE.Color(0x1a3560)}
-          shininess={16}
+          specular={new THREE.Color(0x2a4a80)}
+          shininess={22}
           emissiveMap={lightsMap}
           emissive={new THREE.Color(0xffd28a)}
-          emissiveIntensity={0.45}
+          emissiveIntensity={0.5}
         />
       </mesh>
 
-      {/* Single thin atmospheric rim (kept subtle) */}
-      <mesh scale={[1.015, 1.015, 1.015]}>
+      {/* Cloud layer — slightly larger sphere with the cloud map as alpha */}
+      <mesh ref={cloudsRef} scale={[1.005, 1.005, 1.005]}>
+        <sphereGeometry args={[radius, 128, 128]} />
+        <meshPhongMaterial
+          map={cloudsMap}
+          alphaMap={cloudsMap}
+          transparent
+          opacity={0.85}
+          depthWrite={false}
+          color={new THREE.Color(0xffffff)}
+        />
+      </mesh>
+
+      {/* Inner atmosphere (tight cyan rim) */}
+      <mesh scale={[1.018, 1.018, 1.018]}>
         <sphereGeometry args={[radius, 64, 64]} />
         <shaderMaterial
           transparent
@@ -75,8 +95,8 @@ export default function Earth({ radius = EARTH_RADIUS }: Props) {
           side={THREE.BackSide}
           uniforms={{
             uColor: { value: new THREE.Color(0x4ad8ff) },
-            uIntensity: { value: 0.35 },
-            uPower: { value: 3.6 },
+            uIntensity: { value: 0.5 },
+            uPower: { value: 3.4 },
           }}
           vertexShader={atmosphereVertex}
           fragmentShader={atmosphereFragment}
@@ -84,7 +104,7 @@ export default function Earth({ radius = EARTH_RADIUS }: Props) {
       </mesh>
 
       {/* Outer faint blue glow */}
-      <mesh scale={[1.06, 1.06, 1.06]}>
+      <mesh scale={[1.07, 1.07, 1.07]}>
         <sphereGeometry args={[radius, 48, 48]} />
         <shaderMaterial
           transparent
@@ -92,7 +112,7 @@ export default function Earth({ radius = EARTH_RADIUS }: Props) {
           side={THREE.BackSide}
           uniforms={{
             uColor: { value: new THREE.Color(0x2a6cff) },
-            uIntensity: { value: 0.15 },
+            uIntensity: { value: 0.2 },
             uPower: { value: 1.8 },
           }}
           vertexShader={atmosphereVertex}

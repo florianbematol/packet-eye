@@ -1,8 +1,10 @@
 # The 3D globe
 
-The dark blue centerpiece is a real Earth (NASA Blue Marble texture +
-specular + normal + city lights night map) wrapped in a thin Fresnel
-atmosphere. It does **not** rotate by itself — the camera does, when
+The dark blue centerpiece is a real Earth (Natural Earth III 16K day
+texture + 16K bump map + 16K water mask for ocean specularity + 16K
+city lights, with an 8K cloud layer on top) wrapped in a thin Fresnel
+atmosphere. Textures total ~62 MB and are cached by the browser after
+the first load. It does **not** rotate by itself — the camera does, when
 auto-rotate is on. This way the markers and arcs stay locked to their
 geographic coordinates instead of sliding under a spinning sphere.
 

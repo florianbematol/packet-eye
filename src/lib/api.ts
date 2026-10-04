@@ -17,40 +17,70 @@ import type {
 
 // Resolution order:
 //   1. VITE_AGENT_URL if set at build time.
-//   2. In production builds, the page's own origin — the agent serves the
-//      UI itself, so API + WS live on the same host:port.
-//   3. In `vite dev`, the default agent address.
-const BASE_URL =
-  (import.meta.env.VITE_AGENT_URL as string | undefined) ??
-  (!import.meta.env.DEV && typeof window !== "undefined"
-    ? window.location.origin
-    : "http://127.0.0.1:8088");
+//   2. In production builds, the page's own origin IF it's the agent
+//      (i.e. `/api/health` answers "ok") — that's the case when the agent
+//      serves the UI itself on any --listen address.
+//   3. Otherwise the default agent address. This covers `vite dev` and
+//      serving `dist/` from another static server (e.g. `npx serve`).
+const DEFAULT_AGENT_URL = "http://127.0.0.1:8088";
+const ENV_AGENT_URL = import.meta.env.VITE_AGENT_URL as string | undefined;
+
+let BASE_URL = ENV_AGENT_URL ?? DEFAULT_AGENT_URL;
+
+const ready: Promise<string> = (async () => {
+  if (ENV_AGENT_URL || import.meta.env.DEV || typeof window === "undefined") {
+    return BASE_URL;
+  }
+  const origin = window.location.origin;
+  if (origin === DEFAULT_AGENT_URL) return (BASE_URL = origin);
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 1500);
+    const res = await fetch(`${origin}/api/health`, { signal: ctrl.signal });
+    clearTimeout(timer);
+    // Check the body too: SPA-fallback servers answer 200 with index.html.
+    if (res.ok && (await res.text()).trim() === "ok") BASE_URL = origin;
+  } catch {
+    /* not the agent — keep the default */
+  }
+  return BASE_URL;
+})();
+
+/** Resolves once the agent base URL has been determined. */
+export function agentReady(): Promise<string> {
+  return ready;
+}
 
 async function request<T>(
   path: string,
   init?: RequestInit,
 ): Promise<T> {
+  await ready;
   const res = await fetch(`${BASE_URL}${path}`, {
     headers: { "Content-Type": "application/json" },
     ...init,
   });
   if (!res.ok) {
-    let err: unknown;
+    // Read the body exactly once (a Response body can't be consumed
+    // twice), then try to interpret it as `{ "error": "..." }`.
+    const raw = await res.text().catch(() => "");
+    let msg = raw.trim() || res.statusText;
     try {
-      err = await res.json();
+      const parsed = JSON.parse(raw) as unknown;
+      if (parsed && typeof parsed === "object" && "error" in parsed) {
+        msg = String((parsed as { error: unknown }).error);
+      }
     } catch {
-      err = await res.text();
+      /* not JSON — keep the raw text */
     }
-    const msg = typeof err === "object" && err && "error" in err
-      ? String((err as { error: unknown }).error)
-      : String(err);
-    throw new Error(`${res.status} ${res.statusText}: ${msg}`);
+    throw new Error(`${res.status}: ${msg}`);
   }
   return (await res.json()) as T;
 }
 
 export const api = {
-  health: () => fetch(`${BASE_URL}/api/health`).then((r) => r.ok),
+  health: () =>
+    ready.then(() => fetch(`${BASE_URL}/api/health`)).then((r) => r.ok),
   self: () => request<SelfResp>("/api/self"),
   listDevices: () => request<DeviceInfo[]>("/api/devices"),
   status: () => request<StatusResp>("/api/capture/status"),

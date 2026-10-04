@@ -9,7 +9,7 @@
 //   // later:
 //   conn.close();
 
-import { getAgentWsUrl } from "@/lib/api";
+import { agentReady, getAgentWsUrl } from "@/lib/api";
 import type { Alert, EnrichedPacket, StatsTick, WsMessage } from "@/lib/types";
 
 export type ConnStatus = "connecting" | "open" | "closed" | "error";
@@ -87,9 +87,12 @@ export function createPacketStream(opts: PacketStreamOptions): PacketStream {
     });
   };
 
-  // Tiny defer so that React 18 StrictMode's double-mount in dev doesn't
-  // immediately tear down the socket while it's still in CONNECTING.
-  connectTimer = window.setTimeout(connect, 0);
+  // Wait for the agent URL to be resolved, then defer one tick so that
+  // React 18 StrictMode's double-mount in dev doesn't immediately tear
+  // down the socket while it's still in CONNECTING.
+  agentReady().then(() => {
+    if (!closed) connectTimer = window.setTimeout(connect, 0);
+  });
 
   return {
     close: () => {

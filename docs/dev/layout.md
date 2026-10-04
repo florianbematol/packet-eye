@@ -37,10 +37,11 @@ packet-eye/
 │   └── resources/         # GeoIP databases + threat lists + sounds
 │
 ├── src/                   # React frontend (see reference/frontend.md)
-├── public/textures/       # Earth textures (NASA Blue Marble + lights + normal + spec)
+├── public/textures/       # Earth textures (Natural Earth III 16K day/lights/bump/water + 8K clouds)
 ├── scripts/
 │   ├── cargo.ps1          # PATH-aware cargo wrapper used by npm scripts
-│   └── fetch-geoip.ps1    # Pulls GeoLite2 mmdb files from P3TERX
+│   ├── fetch-geoip.ps1    # Pulls GeoLite2 mmdb files from P3TERX
+│   └── fetch-threats.ps1  # Pulls Spamhaus / FireHOL / Tor threat lists
 ├── docs/                  # MkDocs site sources (this site)
 ├── mkdocs.yml
 ├── package.json

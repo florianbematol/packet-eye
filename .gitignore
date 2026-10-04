@@ -25,6 +25,16 @@ agent/resources/GeoLite2-City.mmdb
 agent/resources/GeoLite2-ASN.mmdb
 
 # =====================================================================
+# Threat lists (downloaded by scripts/fetch-threats.ps1 — not
+# redistributed because of upstream licences). custom.txt is user data.
+# =====================================================================
+agent/resources/threat-lists/spamhaus-drop.txt
+agent/resources/threat-lists/firehol-level1.netset
+agent/resources/threat-lists/tor-exit.txt
+agent/resources/threat-lists/custom.txt
+agent/resources/threat-lists/*.download
+
+# =====================================================================
 # MkDocs build output
 # =====================================================================
 site/

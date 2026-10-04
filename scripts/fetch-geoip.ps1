@@ -46,7 +46,7 @@ if (-not (Test-Path -LiteralPath $OutDir)) {
     New-Item -ItemType Directory -Path $OutDir -Force | Out-Null
 }
 
-# P3TERX GeoLite.mmdb — latest GitHub release URLs
+# P3TERX GeoLite.mmdb - latest GitHub release URLs
 $baseUrl = 'https://github.com/P3TERX/GeoLite.mmdb/releases/latest/download'
 $files = @(
     @{ Name = 'GeoLite2-City.mmdb'; MinSizeMB = 50 }

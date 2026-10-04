@@ -20,6 +20,7 @@ See [Installation](../guide/install.md) and
 | `npm run agent:build` | `cargo build --release` on the agent. |
 | `npm run agent:run` | `cargo run` on the agent (must be Administrator). |
 | `npm run fetch-geoip` | Re-download the GeoLite2 City + ASN files. |
+| `npm run fetch-threats` | Re-download the Spamhaus / FireHOL / Tor threat lists. |
 
 The `agent:*` commands shell out to a small `scripts/cargo.ps1`
 wrapper so they work even right after a fresh Rust install before

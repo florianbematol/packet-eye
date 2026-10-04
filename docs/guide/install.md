@@ -75,15 +75,23 @@ The release binary lands in `agent/target/release/packet-eye-agent.exe`
 
 ## Threat lists
 
-Three IP block lists are bundled in `agent/resources/threat-lists/`:
+The IP block lists used by the alert engine are **not** stored in the
+repository (their licences don't all allow redistribution). Download
+them once:
 
-- `spamhaus-drop.txt`
-- `firehol-level1.netset`
-- `tor-exit.txt`
-- `custom.txt` (initially empty, edit to add your own CIDRs)
+```powershell
+npm run fetch-threats
+```
 
-To refresh them from upstream sources, re-download the files manually
-into the same directory and restart the agent. A built-in updater is
-on the roadmap.
+This writes into `agent/resources/threat-lists/`:
+
+- `spamhaus-drop.txt` — [Spamhaus DROP](https://www.spamhaus.org/drop/)
+- `firehol-level1.netset` — [FireHOL Level 1](https://iplists.firehol.org/)
+- `tor-exit.txt` — [Tor exit addresses](https://check.torproject.org/exit-addresses)
+- `custom.txt` — created empty if missing; add your own IPs / CIDRs
+
+Re-run the same command whenever you want fresher lists, then restart
+the agent. Without the lists the agent still runs, the `threat-list`
+alert rule simply never fires.
 
 You're now ready to [run the app](running.md).

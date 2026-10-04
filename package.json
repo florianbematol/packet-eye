@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "lint": "tsc -b",
     "fetch-geoip": "powershell -ExecutionPolicy Bypass -File scripts/fetch-geoip.ps1",
+    "fetch-threats": "powershell -ExecutionPolicy Bypass -File scripts/fetch-threats.ps1",
     "agent:run": "powershell -ExecutionPolicy Bypass -File scripts/cargo.ps1 run --manifest-path agent/Cargo.toml",
     "agent:build": "powershell -ExecutionPolicy Bypass -File scripts/cargo.ps1 build --release --manifest-path agent/Cargo.toml",
     "agent:check": "powershell -ExecutionPolicy Bypass -File scripts/cargo.ps1 check --manifest-path agent/Cargo.toml"

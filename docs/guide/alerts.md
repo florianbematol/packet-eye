@@ -50,24 +50,17 @@ at the same agent.
 
 ## Threat list maintenance
 
-The bundled snapshots are static. To refresh them:
+The lists aren't shipped with the repository. Download or refresh them
+with:
 
 ```powershell
-# Spamhaus DROP
-Invoke-WebRequest -Uri https://www.spamhaus.org/drop/drop.txt `
-    -OutFile agent\resources\threat-lists\spamhaus-drop.txt
-
-# FireHOL L1
-Invoke-WebRequest -Uri https://iplists.firehol.org/files/firehol_level1.netset `
-    -OutFile agent\resources\threat-lists\firehol-level1.netset
-
-# Tor exit nodes
-Invoke-WebRequest -Uri https://check.torproject.org/exit-addresses `
-    -OutFile agent\resources\threat-lists\tor-exit.txt
+npm run fetch-threats
 ```
 
-Then restart the agent. A built-in updater à la GeoIP is on the
-roadmap.
+This pulls Spamhaus DROP, FireHOL Level 1 and the Tor exit addresses
+into `agent/resources/threat-lists/` (your `custom.txt` is left
+untouched). Then restart the agent. A built-in updater à la GeoIP is on
+the roadmap.
 
 ## Sounds
 

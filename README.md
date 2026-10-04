@@ -27,7 +27,7 @@ via Npcap on Windows.
 - Live packet capture on any network interface, with the same
   fidelity as Wireshark (Npcap, full snaplen, promiscuous, no
   protocol pre-filter).
-- 3D globe (NASA Blue Marble) with animated arcs / hotspots,
+- 3D globe (Natural Earth III 16K textures + cloud layer) with animated arcs / hotspots,
   user-resizable / draggable panels.
 - GeoIP enrichment (country, city, lat/lon, ASN + organisation) using
   GeoLite2 City + ASN databases sourced from the
@@ -59,6 +59,8 @@ Set up:
 npm install
 # Fetch GeoLite2 City + ASN databases (~75 MB)
 npm run fetch-geoip
+# Fetch IP threat lists (Spamhaus DROP, FireHOL L1, Tor exits)
+npm run fetch-threats
 ```
 
 Run the agent (must be Administrator):
@@ -72,6 +74,15 @@ In another terminal, run the dev frontend:
 ```powershell
 npm run dev
 # -> http://localhost:1420
+```
+
+Or build once and run a single executable that serves the UI too:
+
+```powershell
+npm run build
+npm run agent:build
+.\agent\target\release\packet-eye-agent.exe   # as Administrator
+# -> http://127.0.0.1:8088
 ```
 
 For more, see the
@@ -88,7 +99,7 @@ packet-eye/
 ├── src/               React frontend
 ├── public/textures/   Earth textures
 ├── docs/              MkDocs documentation
-├── scripts/           PowerShell helpers (cargo wrapper, GeoIP fetcher)
+├── scripts/           PowerShell helpers (cargo wrapper, GeoIP + threat-list fetchers)
 └── .github/workflows/ CI (docs deploy)
 ```
 
@@ -98,11 +109,15 @@ MIT — see [LICENSE](./LICENSE).
 
 GeoIP data is © MaxMind under the
 [GeoLite2 EULA](https://www.maxmind.com/en/geolite2/eula),
-redistributed via the P3TERX mirror.
+downloaded at install time from the P3TERX mirror (not stored in this
+repository).
 
-Earth imagery is in the public domain (NASA Visible Earth).
+Earth imagery is in the public domain
+([Natural Earth III](http://www.shadedrelief.com/natural3/) by Tom
+Patterson, derived from NASA data).
 
-Threat lists belong to their respective authors:
+Threat lists belong to their respective authors and are downloaded at
+install time, not redistributed here:
 [Spamhaus](https://www.spamhaus.org/),
 [FireHOL](https://iplists.firehol.org/),
 [The Tor Project](https://www.torproject.org/).

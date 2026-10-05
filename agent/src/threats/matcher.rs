@@ -47,6 +47,8 @@ pub struct Verdict {
 pub struct ThreatMatcher {
     /// Sorted by `start`; non-overlapping after `finalize()` collapses them.
     ranges: RwLock<Vec<Range>>,
+    /// Raw entry count per list (before merging), for display.
+    counts: RwLock<std::collections::HashMap<ListId, usize>>,
 }
 
 impl ThreatMatcher {
@@ -58,7 +60,21 @@ impl ThreatMatcher {
     pub fn add_cidr(&self, cidr: &str, list: ListId) {
         if let Some((start, end)) = parse_cidr(cidr) {
             self.ranges.write().push(Range { start, end, list });
+            *self.counts.write().entry(list).or_default() += 1;
         }
+    }
+
+    pub fn count(&self, list: ListId) -> usize {
+        self.counts.read().get(&list).copied().unwrap_or(0)
+    }
+
+    /// Atomically replace this matcher's content with `fresh`'s, so
+    /// holders of the `Arc` (the alert engine) see the new lists.
+    pub fn replace_with(&self, fresh: &ThreatMatcher) {
+        let ranges = std::mem::take(&mut *fresh.ranges.write());
+        let counts = std::mem::take(&mut *fresh.counts.write());
+        *self.ranges.write() = ranges;
+        *self.counts.write() = counts;
     }
 
     /// Sort and merge once everything is loaded. Significantly speeds up

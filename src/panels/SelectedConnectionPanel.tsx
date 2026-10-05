@@ -3,7 +3,19 @@
 // table for space. Closes when the user clicks the same point again or
 // the X button.
 
-import { X, Globe, Server, Cpu, Activity, MapPin, Hash, ListTree } from "lucide-react";
+import {
+  X,
+  Globe,
+  Server,
+  Cpu,
+  Activity,
+  MapPin,
+  Hash,
+  ListTree,
+  Link2,
+  Download,
+  ShieldBan,
+} from "lucide-react";
 import {
   Card,
   CardContent,
@@ -14,18 +26,32 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import BlockButton from "@/components/BlockButton";
 import { useConnectionsStore, connKey } from "@/store/connectionsStore";
 import { useSelectionStore } from "@/store/selectionStore";
+import {
+  rulesBlockingIp,
+  rulesBlockingProcess,
+  useFirewallStore,
+} from "@/store/firewallStore";
+import { useViewStore } from "@/store/viewStore";
+import { downloadPcapng, endpoint } from "@/lib/api";
 import { formatBps, formatBytes } from "@/lib/format";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import HexDump from "@/components/HexDump";
-import type { EnrichedPacket } from "@/lib/types";
+import type { DomainSource, EnrichedPacket } from "@/lib/types";
 
 const PROTO_VARIANTS: Record<string, "default" | "violet" | "pink" | "outline"> = {
   tcp: "default",
   udp: "violet",
   icmp: "pink",
   other: "outline",
+};
+
+export const DOMAIN_SOURCE_LABEL: Record<DomainSource, string> = {
+  sni: "TLS SNI",
+  http: "HTTP Host",
+  dns: "DNS answer",
 };
 
 export default function SelectedConnectionPanel() {
@@ -50,7 +76,42 @@ export default function SelectedConnectionPanel() {
     return out;
   }, [recentPackets, selectedId]);
 
+  const rules = useFirewallStore((s) => s.rules);
+  const rulesLoaded = useFirewallStore((s) => s.loaded);
+  const refreshRules = useFirewallStore((s) => s.refresh);
+  const setView = useViewStore((s) => s.setView);
+  const [exporting, setExporting] = useState(false);
+  const [exportMsg, setExportMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!rulesLoaded) void refreshRules();
+  }, [rulesLoaded, refreshRules]);
+
+  useEffect(() => setExportMsg(null), [selectedId]);
+
   if (!selectedId || !conn) return null;
+
+  const blockingRules = [
+    ...rulesBlockingIp(rules, conn.remote_ip),
+    ...rulesBlockingProcess(rules, conn.process),
+  ];
+
+  const exportConnection = async () => {
+    setExporting(true);
+    setExportMsg(null);
+    try {
+      const n = await downloadPcapng({
+        proto: conn.proto,
+        a: endpoint(conn.src_ip, conn.src_port),
+        b: endpoint(conn.dst_ip, conn.dst_port),
+      });
+      setExportMsg(n ? `${n} packets exported` : "exported");
+    } catch (e) {
+      setExportMsg(e instanceof Error ? e.message : String(e));
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const country = conn.remote_geo?.country ?? null;
   const countryIso = conn.remote_geo?.country_iso ?? null;
@@ -119,16 +180,34 @@ export default function SelectedConnectionPanel() {
               )}
             </div>
           )}
-          {conn.remote_hostname &&
-            conn.remote_hostname !== conn.remote_ip && (
-              <div
-                className="font-mono text-[10px] text-muted-foreground break-all"
-                title="Reverse DNS hostname (not the server location)"
-              >
-                <span className="opacity-60">dns:</span> {conn.remote_hostname}
-              </div>
-            )}
+          {conn.remote_domain && (
+            <div
+              className="font-mono text-xs text-foreground/85 flex items-center gap-1 break-all"
+              title="Name requested by the application, read from the traffic"
+            >
+              <Link2 className="h-3 w-3 text-neon-green shrink-0" />
+              <span>{conn.remote_domain}</span>
+              {conn.remote_domain_source && (
+                <span className="text-[9px] uppercase tracking-wider text-muted-foreground/70 ml-1">
+                  via {DOMAIN_SOURCE_LABEL[conn.remote_domain_source]}
+                </span>
+              )}
+            </div>
+          )}
         </div>
+
+        {blockingRules.length > 0 && (
+          <button
+            className="w-full flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-2 py-1.5 text-left mono text-[10px] text-destructive hover:bg-destructive/20"
+            onClick={() => setView("firewall")}
+            title="Open the Firewall view"
+          >
+            <ShieldBan className="h-3.5 w-3.5 shrink-0" />
+            Blocked by {blockingRules.length} Packet Eye rule
+            {blockingRules.length > 1 ? "s" : ""} — traffic you still see here
+            predates the rule or goes the other way.
+          </button>
+        )}
 
         <Separator />
 
@@ -198,6 +277,35 @@ export default function SelectedConnectionPanel() {
               : `${ageSec}s`}
           </span>
         </Row>
+
+        {/* Actions */}
+        <div className="flex flex-wrap items-center gap-2 pt-1">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={exportConnection}
+            disabled={exporting}
+            title="Download this connection's buffered packets for Wireshark"
+          >
+            <Download className="h-3.5 w-3.5 mr-1.5" />
+            {exporting ? "Exporting…" : ".pcapng"}
+          </Button>
+          <BlockButton
+            target={{ kind: "ip", value: conn.remote_ip }}
+            label={conn.remote_ip}
+            buttonLabel="Block IP"
+          />
+          {conn.process && (
+            <BlockButton
+              target={{ kind: "process", pid: conn.pid, name: conn.process }}
+              label={conn.process}
+              buttonLabel="Block app"
+            />
+          )}
+        </div>
+        {exportMsg && (
+          <div className="mono text-[10px] text-muted-foreground break-all">{exportMsg}</div>
+        )}
 
         <div className="font-mono text-[10px] text-muted-foreground/70 break-all pt-1 border-t border-border/40">
           local: {conn.src_ip}:{conn.src_port}

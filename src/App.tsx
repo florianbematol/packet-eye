@@ -6,6 +6,10 @@ import {
   Settings,
   Pause,
   Play,
+  Globe2,
+  AppWindow,
+  History,
+  Shield,
 } from "lucide-react";
 import CapturePanel from "@/panels/CapturePanel";
 import StatsBar from "@/panels/StatsBar";
@@ -19,6 +23,7 @@ import { useConnectionsStore } from "@/store/connectionsStore";
 import { useAlertsStore } from "@/store/alertsStore";
 import { usePrefsStore } from "@/store/prefsStore";
 import { useSelectionStore } from "@/store/selectionStore";
+import { useViewStore, type View } from "@/store/viewStore";
 import { createPacketStream, type ConnStatus } from "@/lib/ws";
 import { playAlertSound, unlockAudio } from "@/lib/audio";
 import { cn } from "@/lib/utils";
@@ -28,6 +33,9 @@ import { cn } from "@/lib/utils";
 const GlobeScene = lazy(() => import("@/scene/GlobeScene"));
 // Preferences dialog is rarely opened — lazy load too.
 const PreferencesDialog = lazy(() => import("@/panels/Preferences"));
+const AppsView = lazy(() => import("@/views/AppsView"));
+const HistoryView = lazy(() => import("@/views/HistoryView"));
+const FirewallView = lazy(() => import("@/views/FirewallView"));
 
 export default function App() {
   const ingestBatch = useConnectionsStore((s) => s.ingestBatch);
@@ -39,6 +47,7 @@ export default function App() {
   const [conn, setConn] = useState<ConnStatus>("connecting");
   const [prefsOpen, setPrefsOpen] = useState(false);
   const [autoRotate, setAutoRotate] = useState(false);
+  const view = useViewStore((s) => s.view);
 
   // Unlock the audio context on the first click anywhere.
   useEffect(() => {
@@ -117,6 +126,7 @@ export default function App() {
             packet eye
           </div>
           <ConnIndicator status={conn} />
+          <ViewTabs />
         </div>
         <div className="flex items-center gap-3 pointer-events-auto">
           <div className="pointer-events-auto">
@@ -153,6 +163,33 @@ export default function App() {
         )}
       </Suspense>
 
+      {view === "live" ? <LiveOverlays running={running} setRunning={setRunning} /> : (
+        <Suspense
+          fallback={
+            <div className="absolute inset-0 z-20 flex items-center justify-center mono text-xs text-muted-foreground">
+              Loading…
+            </div>
+          }
+        >
+          {view === "apps" && <AppsView />}
+          {view === "history" && <HistoryView />}
+          {view === "firewall" && <FirewallView />}
+        </Suspense>
+      )}
+    </div>
+  );
+}
+
+/** Panels shown over the globe in the Live view. */
+function LiveOverlays({
+  running,
+  setRunning,
+}: {
+  running: boolean;
+  setRunning: (b: boolean) => void;
+}) {
+  return (
+    <>
       {/* Left panel: capture controls (draggable) */}
       <DraggablePanel
         storageKey="packet-eye:panel:capture"
@@ -192,7 +229,38 @@ export default function App() {
       >
         <ConnectionsList />
       </ResizableRightPanel>
-    </div>
+    </>
+  );
+}
+
+const VIEW_TABS: { value: View; label: string; Icon: typeof Globe2 }[] = [
+  { value: "live", label: "Live", Icon: Globe2 },
+  { value: "apps", label: "Apps", Icon: AppWindow },
+  { value: "history", label: "History", Icon: History },
+  { value: "firewall", label: "Firewall", Icon: Shield },
+];
+
+function ViewTabs() {
+  const view = useViewStore((s) => s.view);
+  const setView = useViewStore((s) => s.setView);
+  return (
+    <nav className="ml-3 inline-flex rounded-md border border-border/60 glass p-0.5">
+      {VIEW_TABS.map(({ value, label, Icon }) => (
+        <button
+          key={value}
+          onClick={() => setView(value)}
+          className={cn(
+            "flex items-center gap-1.5 mono text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-[5px] transition-colors",
+            view === value
+              ? "bg-primary/20 text-primary"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          <Icon className="h-3 w-3" />
+          {label}
+        </button>
+      ))}
+    </nav>
   );
 }
 

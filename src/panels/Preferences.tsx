@@ -2,7 +2,7 @@
 // (client-side). Opens from the header gear button.
 
 import { useEffect, useState } from "react";
-import { Save, Volume2, VolumeX, Bell, Play, Globe, RefreshCw, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Save, Volume2, VolumeX, Bell, Play, Globe, RefreshCw, CheckCircle2, AlertTriangle, ShieldAlert } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -35,6 +35,7 @@ import type {
   AlertRules,
   GeoIpInfo,
   Severity,
+  ThreatStats,
 } from "@/lib/types";
 
 interface Props {
@@ -113,6 +114,10 @@ export default function PreferencesDialog({ open, onOpenChange }: Props) {
               <Globe className="h-3.5 w-3.5 mr-1.5" />
               GeoIP
             </TabsTrigger>
+            <TabsTrigger value="threats">
+              <ShieldAlert className="h-3.5 w-3.5 mr-1.5" />
+              Threat lists
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="rules">
@@ -135,6 +140,10 @@ export default function PreferencesDialog({ open, onOpenChange }: Props) {
 
           <TabsContent value="geoip">
             <GeoIpPanel />
+          </TabsContent>
+
+          <TabsContent value="threats">
+            <ThreatListsPanel onCount={setThreatCount} />
           </TabsContent>
         </Tabs>
 
@@ -489,6 +498,95 @@ function DbCard({
       <div className="mono text-[10px] text-muted-foreground">
         source: {sourceLabel[file.source] ?? file.source}
       </div>
+    </div>
+  );
+}
+
+/** Threat-list files: entries, freshness, and an in-place update. */
+function ThreatListsPanel({ onCount }: { onCount: (n: number) => void }) {
+  const [info, setInfo] = useState<ThreatStats | null>(null);
+  const [updating, setUpdating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [failures, setFailures] = useState<string[]>([]);
+  const [done, setDone] = useState(false);
+
+  useEffect(() => {
+    api
+      .threatStats()
+      .then(setInfo)
+      .catch((e) => setError(String(e)));
+  }, []);
+
+  const update = async () => {
+    setUpdating(true);
+    setError(null);
+    setFailures([]);
+    setDone(false);
+    try {
+      const resp = await api.threatsUpdate();
+      setInfo(resp.info);
+      onCount(resp.info.total_ranges);
+      setFailures(resp.results.filter((r) => !r.ok).map((r) => `${r.file}: ${r.error}`));
+      setDone(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="text-xs text-muted-foreground">
+        IP block lists checked by the <span className="mono">threat-list</span> alert rule.
+        They're downloaded from their publishers (not shipped with Packet Eye) and reloaded in
+        place — no restart needed.
+      </div>
+      {info ? (
+        <div className="space-y-2">
+          {info.lists.map((l) => (
+            <div key={l.id} className="rounded-md border border-border/60 bg-secondary/30 p-2.5">
+              <div className="flex items-center justify-between">
+                <span className="mono text-xs text-foreground/90">{l.label}</span>
+                <span className={`mono text-[10px] ${l.exists ? "text-neon-green" : "text-muted-foreground"}`}>
+                  {l.exists ? `${l.entries.toLocaleString()} entries` : "missing"}
+                </span>
+              </div>
+              <div className="mono text-[10px] text-muted-foreground">
+                {l.file}
+                {l.exists && ` · ${formatBytes(l.size_bytes)}`}
+                {l.modified_iso && ` · updated ${new Date(l.modified_iso).toLocaleString()}`}
+                {!l.updatable && " · edit this file to add your own IPs / CIDRs"}
+              </div>
+            </div>
+          ))}
+          <div className="mono text-[10px] text-muted-foreground/70 break-all">
+            {info.total_ranges.toLocaleString()} merged ranges · folder: {info.dir}
+          </div>
+        </div>
+      ) : (
+        <div className="mono text-xs text-muted-foreground">{error ? "" : "Loading…"}</div>
+      )}
+      <Separator />
+      <Button onClick={update} disabled={updating}>
+        <RefreshCw className={`h-4 w-4 mr-2 ${updating ? "animate-spin" : ""}`} />
+        {updating ? "Updating…" : "Update lists now"}
+      </Button>
+      {done && failures.length === 0 && (
+        <div className="flex items-center gap-2 mono text-[11px] text-neon-green">
+          <CheckCircle2 className="h-3.5 w-3.5" /> All lists updated and reloaded.
+        </div>
+      )}
+      {failures.map((f) => (
+        <div key={f} className="flex items-start gap-2 mono text-[11px] text-neon-amber break-all">
+          <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" /> {f} (previous version kept)
+        </div>
+      ))}
+      {error && (
+        <div className="flex items-start gap-2 mono text-[11px] text-destructive break-all">
+          <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" /> {error}
+        </div>
+      )}
     </div>
   );
 }

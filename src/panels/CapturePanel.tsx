@@ -1,7 +1,7 @@
 // Capture controls panel: device picker, filter toggles, custom BPF, start/stop.
 
 import { useEffect, useState } from "react";
-import { Play, Square, RefreshCcw, AlertTriangle } from "lucide-react";
+import { Play, Square, RefreshCcw, AlertTriangle, Download } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -20,9 +20,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { api } from "@/lib/api";
+import { api, downloadPcapng } from "@/lib/api";
 import { captureFilterToBpf } from "@/lib/bpf";
-import type { CaptureFilter, DeviceInfo } from "@/lib/types";
+import { formatBytes } from "@/lib/format";
+import type { CaptureFilter, DeviceInfo, RingInfo } from "@/lib/types";
 
 interface Props {
   running: boolean;
@@ -209,8 +210,76 @@ export default function CapturePanel({ running, setRunning }: Props) {
         <div className="mono text-[10px] text-muted-foreground/70 pt-1">
           {running ? "● capturing" : "○ idle"} · {devices.length} interfaces
         </div>
+
+        <ExportRow running={running} />
       </CardContent>
     </Card>
+  );
+}
+
+/** Buffer status + "download the whole capture as .pcapng". */
+function ExportRow({ running }: { running: boolean }) {
+  const [info, setInfo] = useState<RingInfo | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    const load = () =>
+      api
+        .exportInfo()
+        .then((i) => alive && setInfo(i))
+        .catch(() => {});
+    load();
+    const t = window.setInterval(load, running ? 2000 : 10_000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+    };
+  }, [running]);
+
+  const download = async () => {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const n = await downloadPcapng();
+      setMsg(n ? `${n} packets exported` : "exported");
+    } catch (e) {
+      setMsg(formatErr(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (info && info.budget_bytes === 0) return null;
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          className="flex-1"
+          onClick={download}
+          disabled={busy || !info?.frames}
+          title="Download the buffered capture, open it in Wireshark"
+        >
+          <Download className="h-3.5 w-3.5 mr-1.5" />
+          {busy ? "Exporting…" : "Export .pcapng"}
+        </Button>
+        {info && (
+          <span
+            className="mono text-[10px] text-muted-foreground tabular-nums"
+            title={`Ring buffer: ${formatBytes(info.bytes)} / ${formatBytes(info.budget_bytes)}${
+              info.evicted_frames ? `, ${info.evicted_frames} older frames evicted` : ""
+            }`}
+          >
+            {info.frames.toLocaleString()} pkts · {formatBytes(info.bytes)}
+          </span>
+        )}
+      </div>
+      {msg && <div className="mono text-[10px] text-muted-foreground break-all">{msg}</div>}
+    </div>
   );
 }
 

@@ -21,6 +21,7 @@ type ColumnKey =
   | "proto"
   | "dir"
   | "remote"
+  | "domain"
   | "geo"
   | "asn"
   | "process"
@@ -88,6 +89,16 @@ const COLUMNS: ColumnDef[] = [
     compare: (a, b) =>
       cmpStr(a.remote_ip, b.remote_ip) ||
       cmpNum(a.remote_port, b.remote_port),
+  },
+  {
+    key: "domain",
+    label: "domain",
+    align: "left",
+    initialWidth: 200,
+    minWidth: 80,
+    sortable: true,
+    defaultDir: "asc",
+    compare: (a, b) => cmpStr(a.remote_domain, b.remote_domain),
   },
   {
     key: "geo",
@@ -445,16 +456,24 @@ export default function ConnectionsList() {
                     </td>
                     <td
                       className="px-2 py-1.5 text-foreground/85 whitespace-nowrap overflow-hidden text-ellipsis"
-                      title={
-                        c.remote_hostname && c.remote_hostname !== c.remote_ip
-                          ? `${c.remote_ip}:${c.remote_port}\nDNS: ${c.remote_hostname}`
-                          : `${c.remote_ip}:${c.remote_port}`
-                      }
+                      title={`${c.remote_ip}:${c.remote_port}`}
                     >
                       {c.remote_ip}
                       <span className="text-muted-foreground/70">
                         :{c.remote_port}
                       </span>
+                    </td>
+                    <td
+                      className="px-2 py-1.5 text-neon-green/90 whitespace-nowrap overflow-hidden text-ellipsis"
+                      title={
+                        c.remote_domain
+                          ? `${c.remote_domain}${c.remote_domain_source ? ` (${c.remote_domain_source})` : ""}`
+                          : ""
+                      }
+                    >
+                      {c.remote_domain || (
+                        <span className="text-muted-foreground/40">—</span>
+                      )}
                     </td>
                     <td
                       className="px-2 py-1.5 text-foreground/70 whitespace-nowrap overflow-hidden text-ellipsis"

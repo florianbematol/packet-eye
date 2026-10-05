@@ -5,14 +5,26 @@
 
 import type {
   AlertRules,
+  BlockDirection,
+  BlockTarget,
   CaptureFilter,
   DeviceInfo,
+  FirewallRule,
   GeoIpInfo,
   GeoIpUpdateResp,
+  HistoryAlert,
+  HistoryApp,
+  HistoryFlow,
+  HistoryInfo,
+  HistoryQuery,
+  HistorySettings,
+  RingInfo,
   SelfResp,
   StatsTick,
   StatusResp,
   ThreatStats,
+  ThreatUpdateResp,
+  TimelinePoint,
 } from "@/lib/types";
 
 // Resolution order:
@@ -99,10 +111,100 @@ export const api = {
       body: JSON.stringify(rules),
     }),
   threatStats: () => request<ThreatStats>("/api/threats"),
+  threatsUpdate: () =>
+    request<ThreatUpdateResp>("/api/threats/update", { method: "POST" }),
   geoipInfo: () => request<GeoIpInfo>("/api/geoip/info"),
   geoipUpdate: () =>
     request<GeoIpUpdateResp>("/api/geoip/update", { method: "POST" }),
+
+  // ---- Export ----
+  exportInfo: () => request<RingInfo>("/api/export/info"),
+
+  // ---- History ----
+  historyInfo: () => request<HistoryInfo>("/api/history/info"),
+  historyTimeline: (q: HistoryQuery) =>
+    request<TimelinePoint[]>(`/api/history/timeline${qs(q)}`),
+  historyFlows: (q: HistoryQuery) =>
+    request<HistoryFlow[]>(`/api/history/flows${qs(q)}`),
+  historyApps: (q: HistoryQuery) =>
+    request<HistoryApp[]>(`/api/history/apps${qs(q)}`),
+  historyAlerts: (q: HistoryQuery) =>
+    request<HistoryAlert[]>(`/api/history/alerts${qs(q)}`),
+  historySettings: (s: HistorySettings) =>
+    request<HistorySettings>("/api/history/settings", {
+      method: "PUT",
+      body: JSON.stringify(s),
+    }),
+  historyClear: () =>
+    request<HistoryInfo>("/api/history/clear", { method: "POST" }),
+
+  // ---- Firewall ----
+  firewallRules: () => request<FirewallRule[]>("/api/firewall/rules"),
+  firewallBlock: (target: BlockTarget, direction: BlockDirection, note?: string) =>
+    request<{ created: string[]; rules: FirewallRule[] }>("/api/firewall/rules", {
+      method: "POST",
+      body: JSON.stringify({ target, direction, note: note || null }),
+    }),
+  firewallSetEnabled: (id: string, enabled: boolean) =>
+    request<FirewallRule[]>(`/api/firewall/rules/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ enabled }),
+    }),
+  firewallDelete: (id: string) =>
+    request<FirewallRule[]>(`/api/firewall/rules/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    }),
 };
+
+/** Build a `?a=1&b=2` query string, skipping empty values. */
+function qs(params: object): string {
+  const parts: string[] = [];
+  for (const [k, v] of Object.entries(params)) {
+    if (v === undefined || v === null || v === "") continue;
+    parts.push(`${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`);
+  }
+  return parts.length ? `?${parts.join("&")}` : "";
+}
+
+/** Format an endpoint the way the agent parses it (`[v6]:port`). */
+export function endpoint(ip: string, port: number): string {
+  return ip.includes(":") ? `[${ip}]:${port}` : `${ip}:${port}`;
+}
+
+/**
+ * Download the buffered capture as `.pcapng`, optionally restricted to
+ * one connection. Throws with the agent's message on failure.
+ */
+export async function downloadPcapng(flow?: {
+  proto: string;
+  a: string;
+  b: string;
+}): Promise<number> {
+  await ready;
+  const res = await fetch(`${BASE_URL}/api/export/pcapng${qs(flow ?? {})}`);
+  if (!res.ok) {
+    const raw = await res.text().catch(() => "");
+    let msg = raw || res.statusText;
+    try {
+      msg = (JSON.parse(raw) as { error?: string }).error ?? msg;
+    } catch {
+      /* keep raw */
+    }
+    throw new Error(msg);
+  }
+  const blob = await res.blob();
+  const disposition = res.headers.get("content-disposition") ?? "";
+  const name = /filename="([^"]+)"/.exec(disposition)?.[1] ?? "packet-eye.pcapng";
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  return Number(res.headers.get("x-packet-count") ?? 0);
+}
 
 export function getAgentBaseUrl(): string {
   return BASE_URL;

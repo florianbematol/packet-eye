@@ -7,6 +7,7 @@ import type {
   Direction,
   StatsTick,
   GeoLookup,
+  DomainSource,
 } from "@/lib/types";
 
 const RECENT_PACKET_CAP = 4096;
@@ -23,7 +24,9 @@ export interface ConnectionAgg {
   remote_ip: string;
   remote_port: number;
   remote_geo: GeoLookup | null;
-  remote_hostname: string | null;
+  /** Domain learned from TLS SNI / HTTP Host / DNS (null if unknown). */
+  remote_domain: string | null;
+  remote_domain_source: DomainSource | null;
   process: string | null;
   pid: number | null;
   direction: Direction;
@@ -64,14 +67,12 @@ function pickRemote(p: EnrichedPacket): {
   remote_ip: string;
   remote_port: number;
   geo: GeoLookup | null;
-  hostname: string | null;
 } {
   if (p.direction === "outbound") {
     return {
       remote_ip: p.dst_ip,
       remote_port: p.dst_port,
       geo: p.dst.geo ?? null,
-      hostname: p.dst.hostname ?? null,
     };
   }
   if (p.direction === "inbound") {
@@ -79,7 +80,6 @@ function pickRemote(p: EnrichedPacket): {
       remote_ip: p.src_ip,
       remote_port: p.src_port,
       geo: p.src.geo ?? null,
-      hostname: p.src.hostname ?? null,
     };
   }
   if (p.dst.geo && !p.src.geo) {
@@ -87,7 +87,6 @@ function pickRemote(p: EnrichedPacket): {
       remote_ip: p.dst_ip,
       remote_port: p.dst_port,
       geo: p.dst.geo,
-      hostname: p.dst.hostname ?? null,
     };
   }
   if (p.src.geo && !p.dst.geo) {
@@ -95,14 +94,12 @@ function pickRemote(p: EnrichedPacket): {
       remote_ip: p.src_ip,
       remote_port: p.src_port,
       geo: p.src.geo,
-      hostname: p.src.hostname ?? null,
     };
   }
   return {
     remote_ip: p.dst_ip,
     remote_port: p.dst_port,
     geo: p.dst.geo ?? null,
-    hostname: p.dst.hostname ?? null,
   };
 }
 
@@ -165,8 +162,10 @@ export const useConnectionsStore = create<ConnectionsStoreState>((set, get) => (
 
         if (p.direction !== "unknown") existing.direction = p.direction;
         if (!existing.remote_geo && remote.geo) existing.remote_geo = remote.geo;
-        if (!existing.remote_hostname && remote.hostname)
-          existing.remote_hostname = remote.hostname;
+        if (p.domain) {
+          existing.remote_domain = p.domain;
+          existing.remote_domain_source = p.domain_source ?? null;
+        }
         if (!existing.process && p.process) existing.process = p.process;
         if (!existing.pid && p.pid) existing.pid = p.pid;
       } else {
@@ -180,7 +179,8 @@ export const useConnectionsStore = create<ConnectionsStoreState>((set, get) => (
           remote_ip: remote.remote_ip,
           remote_port: remote.remote_port,
           remote_geo: remote.geo,
-          remote_hostname: remote.hostname,
+          remote_domain: p.domain ?? null,
+          remote_domain_source: p.domain_source ?? null,
           process: p.process ?? null,
           pid: p.pid ?? null,
           direction: p.direction,

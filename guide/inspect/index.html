@@ -16,7 +16,7 @@
         <link rel="prev" href="../globe/">
       
       
-        <link rel="next" href="../alerts/">
+        <link rel="next" href="../export/">
       
       
         
@@ -407,6 +407,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -654,6 +664,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#domain-names" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Domain names
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#recent-packets" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -702,6 +723,118 @@
   
   
     <li class="md-nav__item">
+      <a href="../export/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Export to Wireshark
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../apps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Applications
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../history/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    History
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../firewall/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firewall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../alerts/" class="md-nav__link">
         
   
@@ -738,6 +871,34 @@
     
   
     GeoIP databases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security
   
 
     
@@ -1132,6 +1293,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#domain-names" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Domain names
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#recent-packets" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1208,15 +1380,19 @@ to localStorage, so it stays put across reloads.</p>
 <tbody>
 <tr>
 <td><strong>Identity</strong></td>
-<td>Protocol badge, direction, hostname (or IP) + port.</td>
+<td>Protocol badge, direction, remote IP + port, server location.</td>
 </tr>
 <tr>
-<td><strong>Location</strong></td>
-<td>Country (ISO code + full name) and city, from GeoLite2-City.</td>
+<td><strong>Domain</strong></td>
+<td>The name the application asked for (<code>download.xboxlive.com</code>…) and where it was read: TLS SNI, HTTP Host or DNS answer. See below.</td>
+</tr>
+<tr>
+<td><strong>Firewall</strong></td>
+<td>A red banner when a Packet Eye firewall rule blocks this IP or app.</td>
 </tr>
 <tr>
 <td><strong>Coordinates</strong></td>
-<td>Lat / lon used to place the hotspot.</td>
+<td>Lat / lon used to place the hotspot (links to Google Maps).</td>
 </tr>
 <tr>
 <td><strong>ASN</strong></td>
@@ -1235,11 +1411,44 @@ to localStorage, so it stays put across reloads.</p>
 <td>Time since the first packet for this 5-tuple.</td>
 </tr>
 <tr>
-<td><strong>Endpoints</strong></td>
-<td>Raw <code>local_ip:port ↔ remote_ip:port</code>.</td>
+<td><strong>Actions</strong></td>
+<td><code>.pcapng</code> export of this connection, <em>Block IP</em>, <em>Block app</em>.</td>
 </tr>
 </tbody>
 </table>
+<h2 id="domain-names">Domain names<a class="headerlink" href="#domain-names" title="Permanent link">&para;</a></h2>
+<p>Packet Eye doesn't use reverse DNS (which returns CDN junk such as
+<code>a23-45.deploy.static.akamaitechnologies.com</code>). It reads the name the
+application really requested, straight from the captured traffic:</p>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>How</th>
+<th>Coverage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>TLS SNI</strong></td>
+<td>Server name in the clear-text ClientHello that opens every HTTPS connection. Hellos split over several TCP segments are reassembled.</td>
+<td>Most HTTPS traffic, exact per connection.</td>
+</tr>
+<tr>
+<td><strong>HTTP Host</strong></td>
+<td><code>Host:</code> header of plain-HTTP requests.</td>
+<td>Unencrypted HTTP.</td>
+</tr>
+<tr>
+<td><strong>DNS answer</strong></td>
+<td>A / AAAA records in DNS responses map an IP back to the queried name.</td>
+<td>Anything resolved through classic DNS while the capture runs.</td>
+</tr>
+</tbody>
+</table>
+<p>Limits: connections opened before the capture started only get a name
+from DNS (if a lookup happens later); QUIC / HTTP-3, Encrypted Client
+Hello and DNS-over-HTTPS hide the name.</p>
 <h2 id="recent-packets">Recent packets<a class="headerlink" href="#recent-packets" title="Permanent link">&para;</a></h2>
 <p>The bottom of the panel lists up to <strong>50 of the most recent packets</strong>
 for this connection, in reverse order (newest first). For each packet:</p>
@@ -1258,14 +1467,13 @@ for this connection, in reverse order (newest first). For each packet:</p>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>…
 </span></code></pre></div>
 <p>The first 256 bytes of the raw frame are streamed from the agent in
-hex form. Larger packets are truncated at this cap to keep WebSocket
-messages small. If you need full payloads, file an issue and we'll
-extend the snaplen / move to a per-packet detail endpoint.</p>
+hex form. For the full packets, export the connection as <code>.pcapng</code>
+(see <a href="../export/">Export to Wireshark</a>).</p>
 <h2 id="tip-search-for-a-specific-endpoint">Tip: search for a specific endpoint<a class="headerlink" href="#tip-search-for-a-specific-endpoint" title="Permanent link">&para;</a></h2>
 <p>The connections table is sortable (click a header) and resizable (drag
 between two header cells). Sort by ASN to group everything Cloudflare,
-or by <code>bps</code> to find the noisiest connection. Then click the row → the
-panel jumps to it on the globe.</p>
+by <code>domain</code> to group a service, or by <code>bps</code> to find the noisiest
+connection. Then click the row → the panel jumps to it on the globe.</p>
 
 
 

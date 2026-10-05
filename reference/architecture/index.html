@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://florianbematol.github.io/packet-eye/reference/architecture/">
       
       
-        <link rel="prev" href="../../guide/geoip/">
+        <link rel="prev" href="../../guide/security/">
       
       
         <link rel="next" href="../api/">
@@ -405,6 +405,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -608,6 +618,118 @@
   
   
     <li class="md-nav__item">
+      <a href="../../guide/export/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Export to Wireshark
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/apps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Applications
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/history/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    History
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/firewall/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firewall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../guide/alerts/" class="md-nav__link">
         
   
@@ -644,6 +766,34 @@
     
   
     GeoIP databases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guide/security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security
   
 
     
@@ -1194,18 +1344,29 @@
 
     subgraph Agent[packet-eye-agent&lt;br&gt;Rust]
       direction TB
+      Sec[security::guard&lt;br&gt;Origin + Host allowlists]
       Cap[capture::runner&lt;br&gt;libpcap + etherparse]
-      Enr[enrich&lt;br&gt;GeoIP / process / DNS / local-ips]
+      Ring[pcap_ring&lt;br&gt;raw frames → .pcapng]
+      Dom[enrich::domains&lt;br&gt;SNI / HTTP Host / DNS]
+      Enr[enrich&lt;br&gt;GeoIP / process / local-ips]
       Eng[alerts::engine&lt;br&gt;rules + threat matcher]
+      Hist[(history&lt;br&gt;SQLite)]
       St[state::AppState&lt;br&gt;broadcast::Sender]
       Api[api::router&lt;br&gt;axum]
+      Fw[firewall&lt;br&gt;NetSecurity PowerShell]
+      Cap --&gt; Ring
+      Cap --&gt; Dom --&gt; Enr
       Cap --&gt; Enr --&gt; St
       St --&gt; Eng
+      St --&gt; Hist
       St --&gt; Api
+      Api --&gt; Fw
+      Sec --&gt; Api
     end
 
     Npcap[(Npcap driver)] --&gt; Cap
-    Browser &lt;--&gt;|REST + WebSocket| Api</code></pre>
+    Fw --&gt; WinFw[(Windows Firewall)]
+    Browser &lt;--&gt;|REST + WebSocket| Sec</code></pre>
 <h2 id="threading-model">Threading model<a class="headerlink" href="#threading-model" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -1240,6 +1401,16 @@
 <td>Many tokio tasks</td>
 <td>per-WebSocket</td>
 <td>One task per connected browser, fans out the broadcast channels.</td>
+</tr>
+<tr>
+<td>History tasks</td>
+<td><code>spawn_history_tasks</code></td>
+<td>Flush the per-minute aggregate to SQLite every 10 s, purge expired rows hourly.</td>
+</tr>
+<tr>
+<td>Blocking pool</td>
+<td><code>spawn_blocking</code></td>
+<td>SQLite queries, PowerShell firewall calls, threat-list reloads.</td>
 </tr>
 </tbody>
 </table>

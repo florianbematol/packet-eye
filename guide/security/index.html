@@ -10,25 +10,31 @@
       
       
       
+        <link rel="canonical" href="https://florianbematol.github.io/packet-eye/guide/security/">
       
+      
+        <link rel="prev" href="../geoip/">
+      
+      
+        <link rel="next" href="../../reference/architecture/">
       
       
         
       
       
-      <link rel="icon" href="/packet-eye/assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
-        <title>Packet Eye</title>
+        <title>Security - Packet Eye</title>
       
     
     
-      <link rel="stylesheet" href="/packet-eye/assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
-        <link rel="stylesheet" href="/packet-eye/assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -47,7 +53,7 @@
       
     
     
-    <script>__md_scope=new URL("/packet-eye/",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -71,6 +77,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#security" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -81,7 +92,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="/packet-eye/." title="Packet Eye" class="md-header__button md-logo" aria-label="Packet Eye" data-md-component="logo">
+    <a href="../.." title="Packet Eye" class="md-header__button md-logo" aria-label="Packet Eye" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -101,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              
+              Security
             
           </span>
         </div>
@@ -214,7 +225,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="/packet-eye/." class="md-tabs__link">
+      <a href="../.." class="md-tabs__link">
         
   
   
@@ -231,11 +242,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="/packet-eye/guide/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
           
   
   
@@ -257,7 +270,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/packet-eye/reference/architecture/" class="md-tabs__link">
+        <a href="../../reference/architecture/" class="md-tabs__link">
           
   
   
@@ -279,7 +292,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/packet-eye/dev/contributing/" class="md-tabs__link">
+        <a href="../../dev/contributing/" class="md-tabs__link">
           
   
   
@@ -315,7 +328,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="/packet-eye/." title="Packet Eye" class="md-nav__button md-logo" aria-label="Packet Eye" data-md-component="logo">
+    <a href="../.." title="Packet Eye" class="md-nav__button md-logo" aria-label="Packet Eye" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -345,7 +358,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -369,6 +382,8 @@
       
   
   
+    
+  
   
   
     
@@ -406,22 +421,23 @@
     
     
       
+        
+        
+      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="/packet-eye/guide/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -439,13 +455,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -465,7 +481,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/guide/install/" class="md-nav__link">
+      <a href="../install/" class="md-nav__link">
         
   
   
@@ -493,7 +509,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/guide/running/" class="md-nav__link">
+      <a href="../running/" class="md-nav__link">
         
   
   
@@ -521,7 +537,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/guide/filters/" class="md-nav__link">
+      <a href="../filters/" class="md-nav__link">
         
   
   
@@ -549,7 +565,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/guide/globe/" class="md-nav__link">
+      <a href="../globe/" class="md-nav__link">
         
   
   
@@ -577,7 +593,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/guide/inspect/" class="md-nav__link">
+      <a href="../inspect/" class="md-nav__link">
         
   
   
@@ -605,7 +621,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/guide/export/" class="md-nav__link">
+      <a href="../export/" class="md-nav__link">
         
   
   
@@ -633,7 +649,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/guide/apps/" class="md-nav__link">
+      <a href="../apps/" class="md-nav__link">
         
   
   
@@ -661,7 +677,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/guide/history/" class="md-nav__link">
+      <a href="../history/" class="md-nav__link">
         
   
   
@@ -689,7 +705,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/guide/firewall/" class="md-nav__link">
+      <a href="../firewall/" class="md-nav__link">
         
   
   
@@ -717,7 +733,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/guide/alerts/" class="md-nav__link">
+      <a href="../alerts/" class="md-nav__link">
         
   
   
@@ -745,7 +761,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/guide/geoip/" class="md-nav__link">
+      <a href="../geoip/" class="md-nav__link">
         
   
   
@@ -770,10 +786,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="/packet-eye/guide/security/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -789,6 +832,70 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#origin-allowlist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Origin allowlist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#host-allowlist-dns-rebinding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Host allowlist (DNS rebinding)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#exposing-the-agent-on-a-lan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exposing the agent on a LAN
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-stored-on-disk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is stored on disk
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -872,7 +979,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/reference/architecture/" class="md-nav__link">
+      <a href="../../reference/architecture/" class="md-nav__link">
         
   
   
@@ -900,7 +1007,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/reference/api/" class="md-nav__link">
+      <a href="../../reference/api/" class="md-nav__link">
         
   
   
@@ -928,7 +1035,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/reference/websocket/" class="md-nav__link">
+      <a href="../../reference/websocket/" class="md-nav__link">
         
   
   
@@ -956,7 +1063,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/reference/frontend/" class="md-nav__link">
+      <a href="../../reference/frontend/" class="md-nav__link">
         
   
   
@@ -1053,7 +1160,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/dev/contributing/" class="md-nav__link">
+      <a href="../../dev/contributing/" class="md-nav__link">
         
   
   
@@ -1081,7 +1188,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/dev/layout/" class="md-nav__link">
+      <a href="../../dev/layout/" class="md-nav__link">
         
   
   
@@ -1109,7 +1216,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/dev/release/" class="md-nav__link">
+      <a href="../../dev/release/" class="md-nav__link">
         
   
   
@@ -1154,6 +1261,60 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#origin-allowlist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Origin allowlist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#host-allowlist-dns-rebinding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Host allowlist (DNS rebinding)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#exposing-the-agent-on-a-lan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exposing the agent on a LAN
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-stored-on-disk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What is stored on disk
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -1166,8 +1327,84 @@
               
               <article class="md-content__inner md-typeset">
                 
-  <h1>404 - Not found</h1>
+                  
 
+
+  
+  
+
+
+<h1 id="security">Security<a class="headerlink" href="#security" title="Permanent link">&para;</a></h1>
+<p>The agent runs as Administrator, captures all your traffic, and can
+change firewall rules. It only listens on <code>127.0.0.1</code>, but that alone
+isn't enough: <strong>any web page open in your browser can send requests to
+<code>127.0.0.1</code></strong>. Two checks run before every request reaches a handler.</p>
+<h2 id="origin-allowlist">Origin allowlist<a class="headerlink" href="#origin-allowlist" title="Permanent link">&para;</a></h2>
+<p>Browsers attach an <code>Origin</code> header to cross-site requests and to every
+WebSocket handshake. The agent accepts only:</p>
+<ul>
+<li>origins whose host is loopback — <code>localhost</code>, <code>127.0.0.1</code>, <code>[::1]</code>,
+  any port (a remote website can never have such an origin);</li>
+<li>origins passed with <code>--allow-origin</code>.</li>
+</ul>
+<p>Anything else gets <code>403</code> — including "simple" POST requests that skip
+the CORS preflight, so a malicious page can't even start/stop a capture
+or create a firewall rule blindly. Requests without <code>Origin</code> (curl,
+same-origin page loads) are allowed.</p>
+<h2 id="host-allowlist-dns-rebinding">Host allowlist (DNS rebinding)<a class="headerlink" href="#host-allowlist-dns-rebinding" title="Permanent link">&para;</a></h2>
+<p>In a DNS-rebinding attack, <code>evil.example</code> is re-pointed to <code>127.0.0.1</code>,
+so the attacker's page becomes "same-origin" with the agent and no
+<code>Origin</code> is sent. The <code>Host</code> header still says <code>evil.example</code>, so the
+agent rejects any <code>Host</code> that isn't loopback, the listen IP, or a name
+passed with <code>--allow-host</code>.</p>
+<h2 id="exposing-the-agent-on-a-lan">Exposing the agent on a LAN<a class="headerlink" href="#exposing-the-agent-on-a-lan" title="Permanent link">&para;</a></h2>
+<p>Not recommended — the API has no authentication. If you really want to
+open the UI from another machine:</p>
+<div class="language-powershell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">packet-eye-agent</span> <span class="p">-</span><span class="n">-listen</span> <span class="n">0</span><span class="p">.</span><span class="n">0</span><span class="p">.</span><span class="n">0</span><span class="p">.</span><span class="n">0</span><span class="p">:</span><span class="n">8088</span> <span class="p">`</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  <span class="p">-</span><span class="n">-allow-host</span> <span class="n">192</span><span class="p">.</span><span class="n">168</span><span class="p">.</span><span class="n">1</span><span class="p">.</span><span class="n">10</span> <span class="p">`</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>  <span class="p">-</span><span class="n">-allow-origin</span> <span class="n">http</span><span class="p">://</span><span class="n">192</span><span class="p">.</span><span class="n">168</span><span class="p">.</span><span class="n">1</span><span class="p">.</span><span class="n">10</span><span class="p">:</span><span class="n">8088</span>
+</span></code></pre></div>
+<p>The agent logs a warning at startup when it isn't bound to loopback.
+Anyone on the network can then read your traffic and change your
+firewall rules.</p>
+<h2 id="what-is-stored-on-disk">What is stored on disk<a class="headerlink" href="#what-is-stored-on-disk" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>%APPDATA%\packet-eye\packet-eye\data\history.sqlite</code></td>
+<td>Per-minute flow history and alerts (see <a href="../history/">History</a>).</td>
+</tr>
+<tr>
+<td><code>%APPDATA%\packet-eye\packet-eye\config\*.json</code></td>
+<td>Alert rules and history settings.</td>
+</tr>
+<tr>
+<td><code>agent\resources\</code></td>
+<td>GeoIP databases and threat lists.</td>
+</tr>
+</tbody>
+</table>
+<p>Nothing is sent anywhere, except the public-IP lookup (<code>/api/self</code>),
+and the GeoIP / threat-list downloads you trigger.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
               </article>
             </div>
           
@@ -1228,10 +1465,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "/packet-eye/", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate", "content.tabs.link", "toc.follow"], "search": "/packet-eye/assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate", "content.tabs.link", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="/packet-eye/assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

@@ -2,66 +2,86 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://florianbematol.github.io/packet-eye/</loc>
-         <lastmod>2026-10-04</lastmod>
+         <lastmod>2026-10-05</lastmod>
     </url>
     <url>
          <loc>https://florianbematol.github.io/packet-eye/dev/contributing/</loc>
-         <lastmod>2026-10-04</lastmod>
+         <lastmod>2026-10-05</lastmod>
     </url>
     <url>
          <loc>https://florianbematol.github.io/packet-eye/dev/layout/</loc>
-         <lastmod>2026-10-04</lastmod>
+         <lastmod>2026-10-05</lastmod>
     </url>
     <url>
          <loc>https://florianbematol.github.io/packet-eye/dev/release/</loc>
-         <lastmod>2026-10-04</lastmod>
+         <lastmod>2026-10-05</lastmod>
     </url>
     <url>
          <loc>https://florianbematol.github.io/packet-eye/guide/</loc>
-         <lastmod>2026-10-04</lastmod>
+         <lastmod>2026-10-05</lastmod>
     </url>
     <url>
          <loc>https://florianbematol.github.io/packet-eye/guide/alerts/</loc>
-         <lastmod>2026-10-04</lastmod>
+         <lastmod>2026-10-05</lastmod>
+    </url>
+    <url>
+         <loc>https://florianbematol.github.io/packet-eye/guide/apps/</loc>
+         <lastmod>2026-10-05</lastmod>
+    </url>
+    <url>
+         <loc>https://florianbematol.github.io/packet-eye/guide/export/</loc>
+         <lastmod>2026-10-05</lastmod>
     </url>
     <url>
          <loc>https://florianbematol.github.io/packet-eye/guide/filters/</loc>
-         <lastmod>2026-10-04</lastmod>
+         <lastmod>2026-10-05</lastmod>
+    </url>
+    <url>
+         <loc>https://florianbematol.github.io/packet-eye/guide/firewall/</loc>
+         <lastmod>2026-10-05</lastmod>
     </url>
     <url>
          <loc>https://florianbematol.github.io/packet-eye/guide/geoip/</loc>
-         <lastmod>2026-10-04</lastmod>
+         <lastmod>2026-10-05</lastmod>
     </url>
     <url>
          <loc>https://florianbematol.github.io/packet-eye/guide/globe/</loc>
-         <lastmod>2026-10-04</lastmod>
+         <lastmod>2026-10-05</lastmod>
+    </url>
+    <url>
+         <loc>https://florianbematol.github.io/packet-eye/guide/history/</loc>
+         <lastmod>2026-10-05</lastmod>
     </url>
     <url>
          <loc>https://florianbematol.github.io/packet-eye/guide/inspect/</loc>
-         <lastmod>2026-10-04</lastmod>
+         <lastmod>2026-10-05</lastmod>
     </url>
     <url>
          <loc>https://florianbematol.github.io/packet-eye/guide/install/</loc>
-         <lastmod>2026-10-04</lastmod>
+         <lastmod>2026-10-05</lastmod>
     </url>
     <url>
          <loc>https://florianbematol.github.io/packet-eye/guide/running/</loc>
-         <lastmod>2026-10-04</lastmod>
+         <lastmod>2026-10-05</lastmod>
+    </url>
+    <url>
+         <loc>https://florianbematol.github.io/packet-eye/guide/security/</loc>
+         <lastmod>2026-10-05</lastmod>
     </url>
     <url>
          <loc>https://florianbematol.github.io/packet-eye/reference/api/</loc>
-         <lastmod>2026-10-04</lastmod>
+         <lastmod>2026-10-05</lastmod>
     </url>
     <url>
          <loc>https://florianbematol.github.io/packet-eye/reference/architecture/</loc>
-         <lastmod>2026-10-04</lastmod>
+         <lastmod>2026-10-05</lastmod>
     </url>
     <url>
          <loc>https://florianbematol.github.io/packet-eye/reference/frontend/</loc>
-         <lastmod>2026-10-04</lastmod>
+         <lastmod>2026-10-05</lastmod>
     </url>
     <url>
          <loc>https://florianbematol.github.io/packet-eye/reference/websocket/</loc>
-         <lastmod>2026-10-04</lastmod>
+         <lastmod>2026-10-05</lastmod>
     </url>
 </urlset>

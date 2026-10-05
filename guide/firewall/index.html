@@ -10,25 +10,31 @@
       
       
       
+        <link rel="canonical" href="https://florianbematol.github.io/packet-eye/guide/firewall/">
       
+      
+        <link rel="prev" href="../history/">
+      
+      
+        <link rel="next" href="../alerts/">
       
       
         
       
       
-      <link rel="icon" href="/packet-eye/assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
-        <title>Packet Eye</title>
+        <title>Firewall - Packet Eye</title>
       
     
     
-      <link rel="stylesheet" href="/packet-eye/assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
-        <link rel="stylesheet" href="/packet-eye/assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -47,7 +53,7 @@
       
     
     
-    <script>__md_scope=new URL("/packet-eye/",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -71,6 +77,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#firewall" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -81,7 +92,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="/packet-eye/." title="Packet Eye" class="md-header__button md-logo" aria-label="Packet Eye" data-md-component="logo">
+    <a href="../.." title="Packet Eye" class="md-header__button md-logo" aria-label="Packet Eye" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -101,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              
+              Firewall
             
           </span>
         </div>
@@ -214,7 +225,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="/packet-eye/." class="md-tabs__link">
+      <a href="../.." class="md-tabs__link">
         
   
   
@@ -231,11 +242,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="/packet-eye/guide/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
           
   
   
@@ -257,7 +270,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/packet-eye/reference/architecture/" class="md-tabs__link">
+        <a href="../../reference/architecture/" class="md-tabs__link">
           
   
   
@@ -279,7 +292,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="/packet-eye/dev/contributing/" class="md-tabs__link">
+        <a href="../../dev/contributing/" class="md-tabs__link">
           
   
   
@@ -315,7 +328,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="/packet-eye/." title="Packet Eye" class="md-nav__button md-logo" aria-label="Packet Eye" data-md-component="logo">
+    <a href="../.." title="Packet Eye" class="md-nav__button md-logo" aria-label="Packet Eye" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -345,7 +358,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -369,6 +382,8 @@
       
   
   
+    
+  
   
   
     
@@ -406,22 +421,23 @@
     
     
       
+        
+        
+      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="/packet-eye/guide/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -439,13 +455,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -465,7 +481,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/guide/install/" class="md-nav__link">
+      <a href="../install/" class="md-nav__link">
         
   
   
@@ -493,7 +509,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/guide/running/" class="md-nav__link">
+      <a href="../running/" class="md-nav__link">
         
   
   
@@ -521,7 +537,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/guide/filters/" class="md-nav__link">
+      <a href="../filters/" class="md-nav__link">
         
   
   
@@ -549,7 +565,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/guide/globe/" class="md-nav__link">
+      <a href="../globe/" class="md-nav__link">
         
   
   
@@ -577,7 +593,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/guide/inspect/" class="md-nav__link">
+      <a href="../inspect/" class="md-nav__link">
         
   
   
@@ -605,7 +621,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/guide/export/" class="md-nav__link">
+      <a href="../export/" class="md-nav__link">
         
   
   
@@ -633,7 +649,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/guide/apps/" class="md-nav__link">
+      <a href="../apps/" class="md-nav__link">
         
   
   
@@ -661,7 +677,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/guide/history/" class="md-nav__link">
+      <a href="../history/" class="md-nav__link">
         
   
   
@@ -686,10 +702,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="/packet-eye/guide/firewall/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firewall
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -705,6 +748,59 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#blocking-from-anywhere" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Blocking from anywhere
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-firewall-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Firewall tab
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it works
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -717,7 +813,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/guide/alerts/" class="md-nav__link">
+      <a href="../alerts/" class="md-nav__link">
         
   
   
@@ -745,7 +841,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/guide/geoip/" class="md-nav__link">
+      <a href="../geoip/" class="md-nav__link">
         
   
   
@@ -773,7 +869,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/guide/security/" class="md-nav__link">
+      <a href="../security/" class="md-nav__link">
         
   
   
@@ -872,7 +968,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/reference/architecture/" class="md-nav__link">
+      <a href="../../reference/architecture/" class="md-nav__link">
         
   
   
@@ -900,7 +996,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/reference/api/" class="md-nav__link">
+      <a href="../../reference/api/" class="md-nav__link">
         
   
   
@@ -928,7 +1024,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/reference/websocket/" class="md-nav__link">
+      <a href="../../reference/websocket/" class="md-nav__link">
         
   
   
@@ -956,7 +1052,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/reference/frontend/" class="md-nav__link">
+      <a href="../../reference/frontend/" class="md-nav__link">
         
   
   
@@ -1053,7 +1149,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/dev/contributing/" class="md-nav__link">
+      <a href="../../dev/contributing/" class="md-nav__link">
         
   
   
@@ -1081,7 +1177,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/dev/layout/" class="md-nav__link">
+      <a href="../../dev/layout/" class="md-nav__link">
         
   
   
@@ -1109,7 +1205,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/packet-eye/dev/release/" class="md-nav__link">
+      <a href="../../dev/release/" class="md-nav__link">
         
   
   
@@ -1154,6 +1250,49 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#blocking-from-anywhere" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Blocking from anywhere
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-firewall-tab" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Firewall tab
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it works
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -1166,8 +1305,91 @@
               
               <article class="md-content__inner md-typeset">
                 
-  <h1>404 - Not found</h1>
+                  
 
+
+  
+  
+
+
+<h1 id="firewall">Firewall<a class="headerlink" href="#firewall" title="Permanent link">&para;</a></h1>
+<p>Packet Eye can block an IP address, a range or an application with the
+<strong>Windows Firewall</strong>. It only manages its own rules: they all belong to
+the firewall group <strong>“Packet Eye”</strong>, so nothing else on the system is
+touched, and you can always review them in <em>Windows Defender Firewall
+with Advanced Security</em>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Administrator rights</p>
+<p>Creating, toggling or deleting rules requires the agent to run as
+Administrator (which it already needs for the capture). Listing works
+without.</p>
+</div>
+<h2 id="blocking-from-anywhere">Blocking from anywhere<a class="headerlink" href="#blocking-from-anywhere" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Where</th>
+<th>What</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Connection details panel</td>
+<td><em>Block IP</em> (remote address), <em>Block app</em> (owner process).</td>
+</tr>
+<tr>
+<td>Apps tab</td>
+<td><em>Block</em> on an application row.</td>
+</tr>
+<tr>
+<td>History tab</td>
+<td>Block button on each top connection.</td>
+</tr>
+<tr>
+<td>Firewall tab</td>
+<td>Manual form, and one-click blocking of flagged endpoints.</td>
+</tr>
+</tbody>
+</table>
+<p>Each time a dialog asks for the <strong>direction</strong> (outbound by default,
+inbound, or both — which creates two rules) and an optional <strong>note</strong>,
+stored in the rule description.</p>
+<p>Safety checks: loopback and <code>0.0.0.0</code> can't be blocked (that would cut
+the UI off from the agent), prefixes shorter than <code>/8</code> are refused, and
+programs must be an existing absolute <code>.exe</code> path.</p>
+<h2 id="the-firewall-tab">The Firewall tab<a class="headerlink" href="#the-firewall-tab" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Counters of active / disabled rules and of IP vs application rules.</li>
+<li>The rule list with an <strong>on/off switch</strong> per rule (disabling keeps the
+  rule for later), the target, the direction and the note, plus delete.</li>
+<li><strong>New block rule</strong> — IP addresses / CIDRs (comma-separated) or an
+  executable path.</li>
+<li><strong>Flagged this session</strong> — remote IPs that raised medium/high/critical
+  alerts since the page was opened, worst first, each with a <em>Block</em>
+  button or a <em>blocked</em> badge.</li>
+</ul>
+<p>Rules persist in Windows: they keep blocking after the agent stops or
+the PC reboots. Blocked outbound traffic never reaches the network card,
+so it disappears from the capture once the rule is active.</p>
+<h2 id="how-it-works">How it works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h2>
+<p>The agent drives the built-in <code>NetSecurity</code> PowerShell module
+(<code>New-NetFirewallRule</code>, <code>Get-NetFirewallRule</code>…), whose output isn't
+localised, unlike <code>netsh</code>. Values you type are validated, then passed to
+PowerShell through environment variables — never pasted into the script
+— so there's no command-injection surface.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
               </article>
             </div>
           
@@ -1228,10 +1450,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "/packet-eye/", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate", "content.tabs.link", "toc.follow"], "search": "/packet-eye/assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.indexes", "search.suggest", "search.highlight", "content.code.copy", "content.code.annotate", "content.tabs.link", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="/packet-eye/assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

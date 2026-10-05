@@ -13,7 +13,7 @@
         <link rel="canonical" href="https://florianbematol.github.io/packet-eye/guide/alerts/">
       
       
-        <link rel="prev" href="../inspect/">
+        <link rel="prev" href="../firewall/">
       
       
         <link rel="next" href="../geoip/">
@@ -407,6 +407,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -608,6 +618,118 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../export/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Export to Wireshark
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../apps/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Applications
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../history/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    History
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../firewall/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Firewall
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -749,6 +871,34 @@
     
   
     GeoIP databases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security
   
 
     
@@ -1288,14 +1438,21 @@ many false positives (FireHOL L1 famously contains <code>192.168.0.0/16</code>).
 survive across runs and are shared with any browser instance pointing
 at the same agent.</p>
 <h2 id="threat-list-maintenance">Threat list maintenance<a class="headerlink" href="#threat-list-maintenance" title="Permanent link">&para;</a></h2>
-<p>The lists aren't shipped with the repository. Download or refresh them
-with:</p>
+<p>The lists aren't shipped with the repository. Refresh them from the UI
+in <strong>Preferences ▸ Threat lists ▸ Update lists now</strong>: the agent
+downloads Spamhaus DROP, FireHOL Level 1 and the Tor exit addresses and
+reloads them in place — no restart. The tab also shows each list's
+entry count and last update. A list that fails to download keeps its
+previous version.</p>
+<p>For a first install (or from a script), the same download is available
+as:</p>
 <div class="language-powershell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">npm</span> <span class="n">run</span> <span class="n">fetch-threats</span>
 </span></code></pre></div>
-<p>This pulls Spamhaus DROP, FireHOL Level 1 and the Tor exit addresses
-into <code>agent/resources/threat-lists/</code> (your <code>custom.txt</code> is left
-untouched). Then restart the agent. A built-in updater à la GeoIP is on
-the roadmap.</p>
+<p>Your own <code>custom.txt</code> (one IP or CIDR per line) is never overwritten;
+use <em>Update lists now</em> after editing it to reload it.</p>
+<p>Every alert is also saved in the <a href="../history/">history</a>, and the
+<a href="../firewall/">Firewall</a> tab lists the endpoints flagged during the
+session with a one-click <em>Block</em>.</p>
 <h2 id="sounds">Sounds<a class="headerlink" href="#sounds" title="Permanent link">&para;</a></h2>
 <p><code>Preferences ▸ Sounds</code>:</p>
 <ul>

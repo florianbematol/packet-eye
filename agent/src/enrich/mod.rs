@@ -1,6 +1,6 @@
 //! Enrichment pipeline.
 
-pub mod dns;
+pub mod domains;
 pub mod geoip;
 pub mod local_ips;
 pub mod process;
@@ -11,7 +11,7 @@ use std::sync::Arc;
 use serde::{Deserialize, Serialize};
 
 use crate::capture::types::{Direction, PacketEvent, Protocol};
-use dns::DnsResolver;
+use domains::{DomainSniffer, DomainSource};
 use geoip::{GeoIpResolver, GeoLookup};
 use local_ips::LocalIps;
 use process::ProcessResolver;
@@ -19,7 +19,6 @@ use process::ProcessResolver;
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct SideInfo {
     pub geo: Option<GeoLookup>,
-    pub hostname: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -37,16 +36,50 @@ pub struct EnrichedPacket {
     pub dst: SideInfo,
     pub process: Option<String>,
     pub pid: Option<u32>,
+    /// Domain of the remote endpoint, learned from TLS SNI, HTTP `Host`
+    /// or DNS answers seen on the wire.
+    #[serde(default)]
+    pub domain: Option<String>,
+    #[serde(default)]
+    pub domain_source: Option<DomainSource>,
     /// Hex-encoded prefix of the raw frame (for the UI's hex viewer).
     /// Truncated server-side at 256 bytes.
     #[serde(default)]
     pub payload_hex: Option<String>,
 }
 
+impl EnrichedPacket {
+    /// The remote side of the packet: `(ip, port, geo)`. Mirrors the
+    /// frontend's `pickRemote`.
+    pub fn remote(&self) -> (IpAddr, u16, Option<&GeoLookup>) {
+        match self.direction {
+            Direction::Outbound => (self.dst_ip, self.dst_port, self.dst.geo.as_ref()),
+            Direction::Inbound => (self.src_ip, self.src_port, self.src.geo.as_ref()),
+            Direction::Unknown => {
+                if self.src.geo.is_some() && self.dst.geo.is_none() {
+                    (self.src_ip, self.src_port, self.src.geo.as_ref())
+                } else {
+                    (self.dst_ip, self.dst_port, self.dst.geo.as_ref())
+                }
+            }
+        }
+    }
+
+    /// The local side of the packet: `(ip, port)`.
+    pub fn local(&self) -> (IpAddr, u16) {
+        let (rip, rport, _) = self.remote();
+        if rip == self.dst_ip && rport == self.dst_port {
+            (self.src_ip, self.src_port)
+        } else {
+            (self.dst_ip, self.dst_port)
+        }
+    }
+}
+
 pub struct Enricher {
     pub geoip: Arc<GeoIpResolver>,
     pub processes: Arc<ProcessResolver>,
-    pub dns: Arc<DnsResolver>,
+    pub domains: Arc<DomainSniffer>,
     pub local: Arc<LocalIps>,
 }
 
@@ -54,13 +87,13 @@ impl Enricher {
     pub fn new(
         geoip: Arc<GeoIpResolver>,
         processes: Arc<ProcessResolver>,
-        dns: Arc<DnsResolver>,
+        domains: Arc<DomainSniffer>,
         local: Arc<LocalIps>,
     ) -> Self {
         Self {
             geoip,
             processes,
-            dns,
+            domains,
             local,
         }
     }
@@ -80,10 +113,7 @@ impl Enricher {
         let src_geo = self.geoip.lookup(&p.src_ip);
         let dst_geo = self.geoip.lookup(&p.dst_ip);
 
-        let src_host = self.dns.lookup_or_resolve_async(&p.src_ip);
-        let dst_host = self.dns.lookup_or_resolve_async(&p.dst_ip);
-
-        EnrichedPacket {
+        let mut out = EnrichedPacket {
             ts_ms: p.ts_ms,
             src_ip: p.src_ip,
             dst_ip: p.dst_ip,
@@ -93,11 +123,27 @@ impl Enricher {
             len: p.len,
             tcp_flags: p.tcp_flags,
             direction,
-            src: SideInfo { geo: src_geo, hostname: src_host },
-            dst: SideInfo { geo: dst_geo, hostname: dst_host },
+            src: SideInfo { geo: src_geo },
+            dst: SideInfo { geo: dst_geo },
             process: process.as_ref().map(|p| p.name.clone()),
             pid: process.map(|p| p.pid),
+            domain: None,
+            domain_source: None,
             payload_hex: p.payload_hex,
+        };
+
+        if matches!(p.proto, Protocol::Tcp | Protocol::Udp) {
+            let (remote_ip, _, _) = out.remote();
+            if let Some((name, source)) = self.domains.lookup(
+                p.proto,
+                (p.src_ip, p.src_port),
+                (p.dst_ip, p.dst_port),
+                remote_ip,
+            ) {
+                out.domain = Some(name);
+                out.domain_source = Some(source);
+            }
         }
+        out
     }
 }

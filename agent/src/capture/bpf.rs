@@ -94,10 +94,23 @@ impl CaptureFilter {
 mod tests {
     use super::*;
 
+    fn quiet() -> CaptureFilter {
+        CaptureFilter {
+            include_lan: false,
+            include_localhost: false,
+            include_broadcast: false,
+            custom: None,
+        }
+    }
+
     #[test]
-    fn default_excludes_lan_loopback_broadcast() {
-        let f = CaptureFilter::default();
-        let bpf = f.to_bpf();
+    fn default_captures_everything() {
+        assert_eq!(CaptureFilter::default().to_bpf(), "");
+    }
+
+    #[test]
+    fn toggles_off_exclude_lan_loopback_broadcast() {
+        let bpf = quiet().to_bpf();
         assert!(bpf.contains("net 127.0.0.0/8"));
         assert!(bpf.contains("net 10.0.0.0/8"));
         assert!(bpf.contains("net 224.0.0.0/4"));
@@ -105,7 +118,7 @@ mod tests {
 
     #[test]
     fn including_lan_drops_rfc1918_clause() {
-        let mut f = CaptureFilter::default();
+        let mut f = quiet();
         f.include_lan = true;
         let bpf = f.to_bpf();
         assert!(!bpf.contains("net 10.0.0.0/8"));

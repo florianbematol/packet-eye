@@ -12,10 +12,20 @@ use etherparse::{NetSlice, SlicedPacket, TransportSlice};
 use pcap::{Capture, Device, Linktype};
 
 use super::bpf::CaptureFilter;
+use super::pcap_ring::PcapRing;
 use super::types::{Direction, PacketEvent, Protocol};
+use crate::enrich::domains::DomainSniffer;
 
 /// Type alias for the per-packet callback.
 pub type PacketCallback = Arc<dyn Fn(PacketEvent) + Send + Sync + 'static>;
+
+/// Side-channel consumers that need the raw frame, run on the capture
+/// thread before the packet is handed to the callback.
+#[derive(Clone)]
+pub struct CaptureHooks {
+    pub sniffer: Arc<DomainSniffer>,
+    pub ring: Arc<PcapRing>,
+}
 
 /// Handle to a running capture. Drop or call [`Runner::stop`] to terminate.
 pub struct Runner {
@@ -35,6 +45,7 @@ impl Runner {
     pub fn spawn(
         device_name: &str,
         filter: &CaptureFilter,
+        hooks: CaptureHooks,
         on_packet: PacketCallback,
     ) -> Result<Self> {
         let devices = Device::list()?;
@@ -68,13 +79,14 @@ impl Runner {
 
         let linktype = cap.get_datalink();
         tracing::info!("link type: {:?}", linktype);
+        hooks.ring.reset(linktype.0);
 
         let stop = Arc::new(AtomicBool::new(false));
         let stop_t = stop.clone();
         let join = thread::Builder::new()
             .name("packet-eye-capture".into())
             .spawn(move || {
-                run_loop(cap, linktype, stop_t, on_packet);
+                run_loop(cap, linktype, stop_t, hooks, on_packet);
             })?;
 
         Ok(Self {
@@ -101,6 +113,7 @@ fn run_loop(
     mut cap: Capture<pcap::Active>,
     linktype: Linktype,
     stop: Arc<AtomicBool>,
+    hooks: CaptureHooks,
     on_packet: PacketCallback,
 ) {
     let mut errors = 0u64;
@@ -109,11 +122,16 @@ fn run_loop(
         match cap.next_packet() {
             Ok(packet) => {
                 total += 1;
-                let ts_ms = (packet.header.ts.tv_sec as i64) * 1000
-                    + (packet.header.ts.tv_usec as i64) / 1000;
-                if let Some(evt) = parse_packet(linktype, packet.data, ts_ms) {
-                    on_packet(evt);
+                let ts_us = (packet.header.ts.tv_sec as i64) * 1_000_000
+                    + packet.header.ts.tv_usec as i64;
+                let (evt, l4_payload, has_ip) = parse_packet(linktype, packet.data, ts_us / 1000);
+                let src = (evt.src_ip, evt.src_port);
+                let dst = (evt.dst_ip, evt.dst_port);
+                hooks.ring.push(ts_us, packet.data, evt.proto, src, dst, has_ip);
+                if has_ip {
+                    hooks.sniffer.observe(evt.proto, src, dst, l4_payload);
                 }
+                on_packet(evt);
             }
             Err(pcap::Error::TimeoutExpired) => continue,
             Err(pcap::Error::NoMorePackets) => break,
@@ -130,7 +148,9 @@ fn run_loop(
     tracing::info!("capture loop exited (total={total} errors={errors})");
 }
 
-fn parse_packet(linktype: Linktype, data: &[u8], ts_ms: i64) -> Option<PacketEvent> {
+/// Decode a raw frame. Returns the event, the L4 payload (empty when
+/// there is none) and whether an IP layer was found.
+fn parse_packet<'a>(linktype: Linktype, data: &'a [u8], ts_ms: i64) -> (PacketEvent, &'a [u8], bool) {
     // Always try to slice the frame so we can extract whatever layers
     // are present. Failing to parse just means we'll surface the packet
     // with `proto: Other` and zeroed addresses — the raw payload still
@@ -151,6 +171,7 @@ fn parse_packet(linktype: Linktype, data: &[u8], ts_ms: i64) -> Option<PacketEve
     };
 
     let zero4 = IpAddr::V4(Ipv4Addr::UNSPECIFIED);
+    let has_ip = sliced_opt.as_ref().map_or(false, |s| s.net.is_some());
     let (src_ip, dst_ip) = sliced_opt
         .as_ref()
         .and_then(|s| s.net.as_ref())
@@ -198,6 +219,12 @@ fn parse_packet(linktype: Linktype, data: &[u8], ts_ms: i64) -> Option<PacketEve
         })
         .unwrap_or((Protocol::Other, 0, 0, 0));
 
+    let l4_payload: &[u8] = match sliced_opt.as_ref().and_then(|s| s.transport.as_ref()) {
+        Some(TransportSlice::Tcp(tcp)) => tcp.payload(),
+        Some(TransportSlice::Udp(udp)) => udp.payload(),
+        _ => &[],
+    };
+
     // Hex-encode the first PAYLOAD_HEX_CAP bytes of the raw frame so the
     // UI's "raw" panel can render a Wireshark-style dump.
     const PAYLOAD_HEX_CAP: usize = 256;
@@ -208,7 +235,7 @@ fn parse_packet(linktype: Linktype, data: &[u8], ts_ms: i64) -> Option<PacketEve
         None
     };
 
-    Some(PacketEvent {
+    let evt = PacketEvent {
         ts_ms,
         src_ip,
         dst_ip,
@@ -219,7 +246,8 @@ fn parse_packet(linktype: Linktype, data: &[u8], ts_ms: i64) -> Option<PacketEve
         tcp_flags,
         direction: Direction::Unknown,
         payload_hex,
-    })
+    };
+    (evt, l4_payload, has_ip)
 }
 
 fn encode_hex(bytes: &[u8]) -> String {

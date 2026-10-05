@@ -1,6 +1,8 @@
 # WebSocket protocol
 
-Endpoint: `ws://127.0.0.1:8088/ws`.
+Endpoint: `ws://127.0.0.1:8088/ws`. The handshake is rejected (`403`)
+unless its `Origin` is a loopback origin or one passed with
+`--allow-origin` — see [Security](../guide/security.md).
 
 The client never sends anything; the server pushes JSON-encoded
 messages.
@@ -41,12 +43,13 @@ interface EnrichedPacket {
   dst: SideInfo;
   process?: string | null;
   pid?: number | null;
+  domain?: string | null;       // remote domain, see below
+  domain_source?: "sni" | "http" | "dns" | null;
   payload_hex?: string | null;  // ≤ 256 bytes hex-encoded
 }
 
 interface SideInfo {
   geo?: GeoLookup | null;
-  hostname?: string | null;
 }
 
 interface GeoLookup {

@@ -5,6 +5,10 @@ Base URL: `http://127.0.0.1:8088` (override with `--listen`).
 All responses are JSON. Errors come back with an HTTP status ≥ 400 and
 `{"error": "..."}` in the body.
 
+Every request is checked against the Origin / Host allowlists first;
+rejected requests get `403 {"error": "origin not allowed"}` (or
+`host not allowed`). See [Security](../guide/security.md).
+
 ## Health
 
 ### `GET /api/health`
@@ -134,11 +138,134 @@ Persisted to
 ### `GET /api/threats`
 
 ```json
-{ "total_ranges": 4445 }
+{
+  "total_ranges": 4601,
+  "dir": "C:\\…\\agent\\resources\\threat-lists",
+  "lists": [
+    {
+      "id": "spamhaus_drop",
+      "label": "Spamhaus DROP",
+      "file": "spamhaus-drop.txt",
+      "exists": true,
+      "size_bytes": 45655,
+      "modified_iso": "2026-10-05T17:20:11Z",
+      "entries": 1532,
+      "updatable": true
+    }
+  ]
+}
 ```
 
-The number of merged IPv4/IPv6 ranges currently loaded from the four
-threat-list files.
+`total_ranges` is the number of merged IPv4/IPv6 ranges in memory;
+`entries` counts the lines of each file. `custom.txt` has
+`"updatable": false`.
+
+### `POST /api/threats/update`
+
+Downloads Spamhaus DROP, FireHOL Level 1 and the Tor exit list into
+`dir` (atomic rename per file), then hot-reloads every list including
+`custom.txt`. A failing download keeps the previous file. `409` if an
+update is already running.
+
+```json
+{
+  "results": [
+    { "file": "spamhaus-drop.txt", "ok": true, "error": null, "size_bytes": 45655 }
+  ],
+  "info": { "total_ranges": 4601, "dir": "…", "lists": [ … ] }
+}
+```
+
+## Export
+
+### `GET /api/export/info`
+
+```json
+{
+  "frames": 18234,
+  "bytes": 9123456,
+  "budget_bytes": 67108864,
+  "evicted_frames": 0,
+  "oldest_ts_ms": 1700000000000,
+  "newest_ts_ms": 1700000060000
+}
+```
+
+### `GET /api/export/pcapng`
+
+Returns the buffered frames as a `.pcapng` file
+(`Content-Disposition: attachment`, `X-Packet-Count` header). Optional
+filter, all three or none:
+
+| Param | Example |
+|---|---|
+| `proto` | `tcp`, `udp`, `icmp` |
+| `a` | `192.168.1.10:50000` or `[2001:db8::1]:443` |
+| `b` | the other endpoint |
+
+`404` when no buffered frame matches, `400` for bad parameters.
+
+## History
+
+All query endpoints accept `from` / `to` (Unix seconds, default the
+last 24 h) and `limit` (default 200, max 5000).
+
+| Endpoint | Extra params | Returns |
+|---|---|---|
+| `GET /api/history/timeline` | `bucket` (seconds, ≥ 60), `process` | `[{ts, packets, bytes, endpoints}]` |
+| `GET /api/history/flows` | `q` (search), `process` | Top remote endpoints by bytes: proto, remote IP/port, process, domain, geo, ASN, packets, bytes, first/last seen. |
+| `GET /api/history/apps` | — | Per process: packets, bytes, endpoints, countries, domains, first/last seen. |
+| `GET /api/history/alerts` | — | `[{ts_ms, severity, rule, message, remote_ip}]`, newest first. |
+| `GET /api/history/info` | — | DB path, size, row counts, oldest/newest minute, settings. |
+| `GET/PUT /api/history/settings` | body `{enabled, retention_days}` | Saved settings (retention clamped to 1–365). |
+| `POST /api/history/clear` | — | Deletes all rows, returns `info`. |
+
+## Firewall
+
+Windows only. Mutations need the agent to run as Administrator
+(`403` otherwise).
+
+### `GET /api/firewall/rules`
+
+```json
+[
+  {
+    "id": "{8A2B5C1E-…}",
+    "name": "Packet Eye - block 203.0.113.7 (outbound)",
+    "description": "Created by Packet Eye on 2026-10-05T17:30:00Z. Ads",
+    "enabled": true,
+    "direction": "Outbound",
+    "action": "Block",
+    "remote": ["203.0.113.7"],
+    "program": "Any"
+  }
+]
+```
+
+### `POST /api/firewall/rules`
+
+```json
+{
+  "target": { "kind": "ip", "value": "203.0.113.7, 198.51.100.0/24" },
+  "direction": "out",
+  "note": "optional"
+}
+```
+
+`target` is one of `{"kind":"ip","value":…}`,
+`{"kind":"program","path":"C:\\…\\app.exe"}` or
+`{"kind":"process","pid":1234,"name":"app.exe"}` (path resolved from
+the running process). `direction` is `out` (default), `in` or `both`
+(two rules). Returns `{ "created": [ids], "rules": [ … ] }`.
+
+### `PATCH /api/firewall/rules/:id`
+
+Body `{"enabled": false}`. Returns the updated rule list.
+
+### `DELETE /api/firewall/rules/:id`
+
+Returns the updated rule list. Only rules of the `Packet Eye` group can
+be changed or deleted (`404` otherwise).
 
 ## GeoIP
 

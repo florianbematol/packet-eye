@@ -11,16 +11,19 @@ src/
 │   ├── DraggablePanel.tsx       Generic panel that can be moved by the user
 │   ├── ResizableRightPanel.tsx  Right-edge panel with horizontal resize handle
 │   ├── HexDump.tsx              Wireshark-style hex dump renderer
+│   ├── BlockButton.tsx          "Block IP / app" button + confirmation dialog
+│   ├── ViewShell.tsx            Container + segmented control for the views
 │   └── ui/                      shadcn/ui primitives (button, card, dialog, …)
 │
 ├── lib/
-│   ├── api.ts             Typed REST client around fetch
+│   ├── api.ts             Typed REST client, agent detection, .pcapng download
 │   ├── ws.ts              Auto-reconnecting WebSocket
 │   ├── types.ts           Shared types (mirrors the Rust models)
 │   ├── audio.ts           Web Audio synthesizer for alert tones
 │   ├── bpf.ts             Mirror of the Rust BPF builder for live preview
 │   ├── geo.ts             latLonToVec3 + Bezier arc builder
 │   ├── format.ts          formatBps / formatBytes / formatNumber
+│   ├── range.ts           Time-range presets + timeline bucket size
 │   ├── useResize.ts       Generic drag-to-resize hook
 │   └── utils.ts           shadcn cn(...)
 │
@@ -28,15 +31,22 @@ src/
 │   ├── connectionsStore.ts  Live packets + aggregated 5-tuple connections
 │   ├── alertsStore.ts       Bounded ring of alerts
 │   ├── selectionStore.ts    Currently selected/hovered connection id
+│   ├── firewallStore.ts     Packet Eye firewall rules + IP/app matching
+│   ├── viewStore.ts         Current top-level view (persisted)
 │   └── prefsStore.ts        UI preferences persisted to localStorage
 │
 ├── panels/
-│   ├── CapturePanel.tsx           Device picker + filter toggles + start/stop
+│   ├── CapturePanel.tsx           Device picker + filters + start/stop + export
 │   ├── StatsBar.tsx               Header throughput counters
 │   ├── ConnectionsList.tsx        Sortable, resizable, clickable table
 │   ├── AlertsFeed.tsx             Severity-ordered alert list
-│   ├── SelectedConnectionPanel.tsx  Details + recent packets + hex dump
-│   └── Preferences.tsx            Tabs: Alert rules / Sounds / GeoIP
+│   ├── SelectedConnectionPanel.tsx  Details, domain, actions, packets, hex dump
+│   └── Preferences.tsx            Tabs: Alert rules / Sounds / GeoIP / Threat lists
+│
+├── views/                 Lazy-loaded full-screen views (header tabs)
+│   ├── AppsView.tsx       Per-application traffic, live or historical
+│   ├── HistoryView.tsx    Timeline, top connections, alerts, retention
+│   └── FirewallView.tsx   Rule dashboard, manual rules, flagged endpoints
 │
 └── scene/
     ├── GlobeScene.tsx     react-three-fiber Canvas, Earth + arcs + hotspots

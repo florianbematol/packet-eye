@@ -19,14 +19,31 @@ What's inside:
 
 | Section | What it shows |
 |---|---|
-| **Identity** | Protocol badge, direction, hostname (or IP) + port. |
-| **Location** | Country (ISO code + full name) and city, from GeoLite2-City. |
-| **Coordinates** | Lat / lon used to place the hotspot. |
+| **Identity** | Protocol badge, direction, remote IP + port, server location. |
+| **Domain** | The name the application asked for (`download.xboxlive.com`…) and where it was read: TLS SNI, HTTP Host or DNS answer. See below. |
+| **Firewall** | A red banner when a Packet Eye firewall rule blocks this IP or app. |
+| **Coordinates** | Lat / lon used to place the hotspot (links to Google Maps). |
 | **ASN** | `AS<number>` + organisation name, from GeoLite2-ASN. |
 | **Process** | Owner process name + PID, from `GetExtendedTcpTable` / `GetExtendedUdpTable`. |
 | **Live counters** | Current `bps`, total bytes, total packets. |
 | **Tracked for** | Time since the first packet for this 5-tuple. |
-| **Endpoints** | Raw `local_ip:port ↔ remote_ip:port`. |
+| **Actions** | `.pcapng` export of this connection, *Block IP*, *Block app*. |
+
+## Domain names
+
+Packet Eye doesn't use reverse DNS (which returns CDN junk such as
+`a23-45.deploy.static.akamaitechnologies.com`). It reads the name the
+application really requested, straight from the captured traffic:
+
+| Source | How | Coverage |
+|---|---|---|
+| **TLS SNI** | Server name in the clear-text ClientHello that opens every HTTPS connection. Hellos split over several TCP segments are reassembled. | Most HTTPS traffic, exact per connection. |
+| **HTTP Host** | `Host:` header of plain-HTTP requests. | Unencrypted HTTP. |
+| **DNS answer** | A / AAAA records in DNS responses map an IP back to the queried name. | Anything resolved through classic DNS while the capture runs. |
+
+Limits: connections opened before the capture started only get a name
+from DNS (if a lookup happens later); QUIC / HTTP-3, Encrypted Client
+Hello and DNS-over-HTTPS hide the name.
 
 ## Recent packets
 
@@ -52,13 +69,12 @@ A classic Wireshark-style block:
 ```
 
 The first 256 bytes of the raw frame are streamed from the agent in
-hex form. Larger packets are truncated at this cap to keep WebSocket
-messages small. If you need full payloads, file an issue and we'll
-extend the snaplen / move to a per-packet detail endpoint.
+hex form. For the full packets, export the connection as `.pcapng`
+(see [Export to Wireshark](export.md)).
 
 ## Tip: search for a specific endpoint
 
 The connections table is sortable (click a header) and resizable (drag
 between two header cells). Sort by ASN to group everything Cloudflare,
-or by `bps` to find the noisiest connection. Then click the row → the
-panel jumps to it on the globe.
+by `domain` to group a service, or by `bps` to find the noisiest
+connection. Then click the row → the panel jumps to it on the globe.

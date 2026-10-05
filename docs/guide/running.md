@@ -44,11 +44,20 @@ browser. The page connects to the agent's WebSocket automatically.
 ```text
 packet-eye-agent --help
 
-  --listen <ADDR>           default 127.0.0.1:8088
-  --city-db  <PATH>         override GeoLite2-City.mmdb path
-  --asn-db   <PATH>         override GeoLite2-ASN.mmdb path
-  --permissive-cors         allow any origin (default true, for vite dev)
+  --listen <ADDR>            default 127.0.0.1:8088
+  --city-db  <PATH>          override GeoLite2-City.mmdb path
+  --asn-db   <PATH>          override GeoLite2-ASN.mmdb path
+  --allow-origin <ORIGIN>    extra web origin allowed to call the API (repeatable)
+  --allow-host <HOST>        extra Host header accepted (repeatable)
+  --pcap-buffer-mb <MiB>     raw-frame buffer for the .pcapng export (default 64, 0 = off)
+  --ui <DIR>                 serve the web UI from this folder
+  --no-ui                    API only
 ```
+
+Pages served from `localhost`, `127.0.0.1` or `[::1]` (any port) are
+always allowed to talk to the agent — so `npm run dev`, `npx serve dist`
+or the agent itself all work out of the box. See
+[Security](security.md) for the why and for exposing the agent on a LAN.
 
 If you change `--listen`, set the matching env var for the frontend:
 

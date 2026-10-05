@@ -35,10 +35,21 @@ via Npcap on Windows.
   account required).
 - Process-level attribution on Windows
   (`GetExtendedTcpTable` / `GetExtendedUdpTable`).
+- Real domain of each connection, read from the traffic (TLS SNI,
+  HTTP `Host`, DNS answers) — no reverse-DNS guesswork.
 - Threat-list checks (Spamhaus DROP, FireHOL Level 1, Tor exit nodes,
-  user-defined `custom.txt`) with configurable alert rules and
-  synthesised audio cues.
-- Wireshark-style hex dump for any captured packet.
+  user-defined `custom.txt`) with configurable alert rules,
+  synthesised audio cues and in-app list updates.
+- Wireshark-style hex dump for any captured packet, and `.pcapng`
+  export of the whole capture or a single connection.
+- **Apps** view: traffic, endpoints, countries and domains per
+  application, live or over a period.
+- **History** view: per-minute flow history in SQLite with a zoomable
+  timeline, search and configurable retention.
+- **Firewall** view: block an IP, a range or an app with Windows
+  Firewall in one click, and manage those rules.
+- Local-only by design: the agent rejects requests from foreign web
+  origins and DNS-rebinding attempts.
 - Code-split, lazy-loaded SPA with shadcn/ui + Tailwind.
 
 ## Quick start

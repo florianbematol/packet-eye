@@ -10,18 +10,29 @@ flowchart LR
 
     subgraph Agent[packet-eye-agent<br>Rust]
       direction TB
+      Sec[security::guard<br>Origin + Host allowlists]
       Cap[capture::runner<br>libpcap + etherparse]
-      Enr[enrich<br>GeoIP / process / DNS / local-ips]
+      Ring[pcap_ring<br>raw frames → .pcapng]
+      Dom[enrich::domains<br>SNI / HTTP Host / DNS]
+      Enr[enrich<br>GeoIP / process / local-ips]
       Eng[alerts::engine<br>rules + threat matcher]
+      Hist[(history<br>SQLite)]
       St[state::AppState<br>broadcast::Sender]
       Api[api::router<br>axum]
+      Fw[firewall<br>NetSecurity PowerShell]
+      Cap --> Ring
+      Cap --> Dom --> Enr
       Cap --> Enr --> St
       St --> Eng
+      St --> Hist
       St --> Api
+      Api --> Fw
+      Sec --> Api
     end
 
     Npcap[(Npcap driver)] --> Cap
-    Browser <-->|REST + WebSocket| Api
+    Fw --> WinFw[(Windows Firewall)]
+    Browser <-->|REST + WebSocket| Sec
 ```
 
 ## Threading model
@@ -33,6 +44,8 @@ flowchart LR
 | `packet-eye-procmap` | `ProcessResolver::spawn_refresher` | Refreshes the `(port, proto) → PID → name` table every 2 s using the Win32 IP helper API. |
 | `packet-eye-localips` | inline thread in `lib.rs::run` | Re-enumerates local IPs every 30 s. |
 | Many tokio tasks | per-WebSocket | One task per connected browser, fans out the broadcast channels. |
+| History tasks | `spawn_history_tasks` | Flush the per-minute aggregate to SQLite every 10 s, purge expired rows hourly. |
+| Blocking pool | `spawn_blocking` | SQLite queries, PowerShell firewall calls, threat-list reloads. |
 
 The capture thread is **blocking by design** — `Capture::next_packet`
 is synchronous. The enrichment is fast (DashMap + LRU lookups), so we

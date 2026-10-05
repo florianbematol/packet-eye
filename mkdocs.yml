@@ -81,8 +81,13 @@ nav:
       - Capture filters: guide/filters.md
       - The 3D globe: guide/globe.md
       - Inspecting connections: guide/inspect.md
+      - Export to Wireshark: guide/export.md
+      - Applications: guide/apps.md
+      - History: guide/history.md
+      - Firewall: guide/firewall.md
       - Alerts & threat lists: guide/alerts.md
       - GeoIP databases: guide/geoip.md
+      - Security: guide/security.md
   - Reference:
       - Architecture: reference/architecture.md
       - REST API: reference/api.md

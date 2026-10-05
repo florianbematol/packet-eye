@@ -50,17 +50,26 @@ at the same agent.
 
 ## Threat list maintenance
 
-The lists aren't shipped with the repository. Download or refresh them
-with:
+The lists aren't shipped with the repository. Refresh them from the UI
+in **Preferences ▸ Threat lists ▸ Update lists now**: the agent
+downloads Spamhaus DROP, FireHOL Level 1 and the Tor exit addresses and
+reloads them in place — no restart. The tab also shows each list's
+entry count and last update. A list that fails to download keeps its
+previous version.
+
+For a first install (or from a script), the same download is available
+as:
 
 ```powershell
 npm run fetch-threats
 ```
 
-This pulls Spamhaus DROP, FireHOL Level 1 and the Tor exit addresses
-into `agent/resources/threat-lists/` (your `custom.txt` is left
-untouched). Then restart the agent. A built-in updater à la GeoIP is on
-the roadmap.
+Your own `custom.txt` (one IP or CIDR per line) is never overwritten;
+use *Update lists now* after editing it to reload it.
+
+Every alert is also saved in the [history](history.md), and the
+[Firewall](firewall.md) tab lists the endpoints flagged during the
+session with a one-click *Block*.
 
 ## Sounds
 

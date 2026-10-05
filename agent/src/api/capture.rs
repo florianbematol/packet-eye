@@ -5,14 +5,14 @@ use std::time::{Duration, Instant};
 
 use axum::extract::State;
 use axum::http::StatusCode;
-use axum::response::IntoResponse;
 use axum::Json;
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 
+use super::error::ApiError;
 use crate::capture::bpf::CaptureFilter;
 use crate::capture::device::{self, DeviceInfo};
-use crate::capture::runner::Runner;
+use crate::capture::runner::{CaptureHooks, Runner};
 use crate::enrich::EnrichedPacket;
 use crate::state::{AppState, StatsTick};
 
@@ -79,7 +79,11 @@ pub async fn start_capture(
         }
     });
 
-    let runner = Runner::spawn(&req.device, &req.filter, on_packet)
+    let hooks = CaptureHooks {
+        sniffer: state.enricher.domains.clone(),
+        ring: state.pcap.clone(),
+    };
+    let runner = Runner::spawn(&req.device, &req.filter, hooks, on_packet)
         .map_err(ApiError::msg)?;
 
     *state.runner.lock() = Some(runner);
@@ -168,32 +172,5 @@ impl BatchBuf {
 
     fn drain(&mut self) -> Vec<EnrichedPacket> {
         std::mem::take(&mut self.buf)
-    }
-}
-
-// ---- Error helper ----
-
-#[derive(Debug)]
-pub struct ApiError {
-    code: StatusCode,
-    msg: String,
-}
-
-impl ApiError {
-    pub fn new(code: StatusCode, msg: impl Into<String>) -> Self {
-        Self { code, msg: msg.into() }
-    }
-    pub fn msg(e: impl std::fmt::Display) -> Self {
-        Self {
-            code: StatusCode::INTERNAL_SERVER_ERROR,
-            msg: e.to_string(),
-        }
-    }
-}
-
-impl IntoResponse for ApiError {
-    fn into_response(self) -> axum::response::Response {
-        let body = serde_json::json!({"error": self.msg});
-        (self.code, Json(body)).into_response()
     }
 }

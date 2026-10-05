@@ -16,9 +16,12 @@ use tokio::sync::broadcast;
 
 use crate::alerts::{Alert, AlertEngine};
 use crate::api::self_ip::SelfCache;
+use crate::capture::pcap_ring::PcapRing;
 use crate::capture::runner::Runner;
 use crate::enrich::{EnrichedPacket, Enricher};
 use crate::enrich::geoip::GeoIpResolver;
+use crate::history::History;
+use crate::threats::ThreatMatcher;
 
 /// Capacity of the live broadcast channel. Old packets are dropped if
 /// clients can't keep up — that's fine, we want freshness, not history.
@@ -48,6 +51,9 @@ pub struct AppState {
     pub enricher: Arc<Enricher>,
     pub geoip: Arc<GeoIpResolver>,
     pub alerts: Arc<AlertEngine>,
+    pub threats: Arc<ThreatMatcher>,
+    pub pcap: Arc<PcapRing>,
+    pub history: Arc<History>,
     pub tx: broadcast::Sender<Vec<EnrichedPacket>>,
     pub alert_tx: broadcast::Sender<Vec<Alert>>,
     /// Capture runner; `Some` while a capture is active.
@@ -61,6 +67,9 @@ impl AppState {
         enricher: Arc<Enricher>,
         geoip: Arc<GeoIpResolver>,
         alerts: Arc<AlertEngine>,
+        threats: Arc<ThreatMatcher>,
+        pcap: Arc<PcapRing>,
+        history: Arc<History>,
     ) -> Self {
         let (tx, _rx) = broadcast::channel::<Vec<EnrichedPacket>>(BROADCAST_CAP);
         let (alert_tx, _arx) = broadcast::channel::<Vec<Alert>>(256);
@@ -68,6 +77,9 @@ impl AppState {
             enricher,
             geoip,
             alerts,
+            threats,
+            pcap,
+            history,
             tx,
             alert_tx,
             runner: Mutex::new(None),
@@ -119,8 +131,12 @@ impl AppState {
             .flat_map(|p| self.alerts.evaluate(p))
             .collect();
         if !alerts.is_empty() {
+            self.history.record_alerts(&alerts);
             let _ = self.alert_tx.send(alerts);
         }
+
+        // Fold into the per-minute history aggregate (flushed periodically).
+        self.history.record(&batch);
 
         self.tx.send(batch).unwrap_or(0)
     }

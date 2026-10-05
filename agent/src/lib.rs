@@ -4,6 +4,9 @@ pub mod alerts;
 pub mod api;
 pub mod capture;
 pub mod enrich;
+pub mod firewall;
+pub mod history;
+pub mod security;
 pub mod state;
 pub mod threats;
 
@@ -12,21 +15,25 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Result;
+use axum::http::{header, Method};
 use clap::Parser;
 use tokio::net::TcpListener;
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{fmt, EnvFilter};
 
 use crate::alerts::AlertEngine;
+use crate::capture::pcap_ring::PcapRing;
 use crate::enrich::{
-    dns::DnsResolver,
+    domains::DomainSniffer,
     geoip::{self, GeoIpResolver},
     local_ips::LocalIps,
     process::ProcessResolver,
     Enricher,
 };
+use crate::history::History;
+use crate::security::SecurityConfig;
 use crate::state::AppState;
 use crate::threats::load_default as load_threats;
 
@@ -48,9 +55,22 @@ pub struct Args {
     #[arg(long)]
     pub asn_db: Option<std::path::PathBuf>,
 
-    /// Allow any origin to call the API (handy for `vite dev`).
-    #[arg(long, default_value_t = true)]
-    pub permissive_cors: bool,
+    /// Extra web origin allowed to call the API, e.g.
+    /// `http://192.168.1.20:3000`. Loopback origins (localhost,
+    /// 127.0.0.1, [::1], any port) are always allowed. Repeatable.
+    #[arg(long = "allow-origin", value_name = "ORIGIN")]
+    pub allow_origins: Vec<String>,
+
+    /// Extra hostname accepted in the `Host` header (DNS-rebinding
+    /// protection). Loopback names and the listen IP are always allowed.
+    /// Repeatable.
+    #[arg(long = "allow-host", value_name = "HOST")]
+    pub allow_hosts: Vec<String>,
+
+    /// Memory budget for the raw-frame ring used by the `.pcapng` export,
+    /// in MiB. `0` disables the export buffer.
+    #[arg(long, default_value_t = 64)]
+    pub pcap_buffer_mb: usize,
 
     /// Directory containing the built web UI (`npm run build` output).
     /// When found, the agent serves it at `/` so a single executable is
@@ -95,12 +115,18 @@ pub async fn run(args: Args) -> Result<()> {
         .ok();
 
     tracing::info!("packet-eye-agent starting on {}", args.listen);
+    if !args.listen.ip().is_loopback() {
+        tracing::warn!(
+            "listening on {} — the API has no authentication and is reachable from the network",
+            args.listen
+        );
+    }
 
     // Build enrichment pipeline.
     let geoip: Arc<GeoIpResolver> = geoip::open_with_args(&args);
     let local: Arc<LocalIps> = LocalIps::new();
     let processes: Arc<ProcessResolver> = ProcessResolver::new();
-    let dns: Arc<DnsResolver> = DnsResolver::new();
+    let domains: Arc<DomainSniffer> = DomainSniffer::new();
 
     processes
         .clone()
@@ -117,12 +143,23 @@ pub async fn run(args: Args) -> Result<()> {
             .ok();
     }
 
-    let enricher = Arc::new(Enricher::new(geoip.clone(), processes, dns, local));
+    let enricher = Arc::new(Enricher::new(geoip.clone(), processes, domains, local));
 
     let threats = load_threats();
-    let alerts = AlertEngine::new(threats);
+    let alerts = AlertEngine::new(threats.clone());
+    let pcap = PcapRing::new(args.pcap_buffer_mb.saturating_mul(1024 * 1024));
+    let history = History::open_default()?;
 
-    let state = Arc::new(AppState::new(enricher, geoip, alerts));
+    let state = Arc::new(AppState::new(
+        enricher,
+        geoip,
+        alerts,
+        threats,
+        pcap,
+        history.clone(),
+    ));
+
+    spawn_history_tasks(history);
 
     // Build router.
     let mut app = api::router(state.clone());
@@ -143,16 +180,23 @@ pub async fn run(args: Args) -> Result<()> {
         ),
     }
 
-    // Tracing + CORS layers.
-    let cors = if args.permissive_cors {
-        CorsLayer::new()
-            .allow_origin(Any)
-            .allow_methods(Any)
-            .allow_headers(Any)
-    } else {
-        CorsLayer::new()
-    };
-    app = app.layer(TraceLayer::new_for_http()).layer(cors);
+    // Security: Host + Origin allowlists, and a matching CORS policy.
+    let sec = Arc::new(SecurityConfig::new(args.listen, &args.allow_origins, &args.allow_hosts));
+    let cors = CorsLayer::new()
+        .allow_origin(AllowOrigin::predicate({
+            let pred = security::cors_predicate(sec.clone());
+            move |origin, _req| pred(origin)
+        }))
+        .allow_methods([Method::GET, Method::POST, Method::PUT, Method::PATCH, Method::DELETE])
+        .allow_headers([header::CONTENT_TYPE])
+        .expose_headers([
+            header::CONTENT_DISPOSITION,
+            header::HeaderName::from_static("x-packet-count"),
+        ]);
+    app = app
+        .layer(TraceLayer::new_for_http())
+        .layer(cors)
+        .layer(axum::middleware::from_fn_with_state(sec, security::guard));
 
     let listener = TcpListener::bind(args.listen).await?;
     tracing::info!("listening on http://{}", args.listen);
@@ -161,4 +205,34 @@ pub async fn run(args: Args) -> Result<()> {
     }
     axum::serve(listener, app).await?;
     Ok(())
+}
+
+/// Flush the history aggregate every 10 s and purge old rows hourly.
+fn spawn_history_tasks(history: Arc<History>) {
+    let h = history.clone();
+    tokio::spawn(async move {
+        let mut tick = tokio::time::interval(Duration::from_secs(10));
+        tick.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+        loop {
+            tick.tick().await;
+            let h = h.clone();
+            match tokio::task::spawn_blocking(move || h.flush()).await {
+                Ok(Err(e)) => tracing::warn!("history flush failed: {e:#}"),
+                Err(e) => tracing::warn!("history flush task failed: {e}"),
+                _ => {}
+            }
+        }
+    });
+    tokio::spawn(async move {
+        let mut tick = tokio::time::interval(Duration::from_secs(3600));
+        loop {
+            tick.tick().await;
+            let h = history.clone();
+            if let Ok(Ok(n)) = tokio::task::spawn_blocking(move || h.purge()).await {
+                if n > 0 {
+                    tracing::info!("history: purged {n} expired rows");
+                }
+            }
+        }
+    });
 }

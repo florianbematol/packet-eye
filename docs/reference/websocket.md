@@ -1,8 +1,9 @@
 # WebSocket protocol
 
-Endpoint: `ws://127.0.0.1:8088/ws`. The handshake is rejected (`403`)
-unless its `Origin` is a loopback origin or one passed with
-`--allow-origin` — see [Security](../guide/security.md).
+Endpoint: `ws://127.0.0.1:8088/ws?token=<token>`. The handshake is
+rejected with `403` unless its `Origin` is a loopback origin or one
+passed with `--allow-origin`, and with `401` without a valid token —
+see [Security](../guide/security.md).
 
 The client never sends anything; the server pushes JSON-encoded
 messages.
@@ -84,8 +85,12 @@ interface StatsTick {
   active_connections: number;
   total_packets: number;
   total_bytes: number;
+  /** False once the capture stops, including on its own (device gone). */
+  running: boolean;
 }
 ```
+
+Rates cover the last second and drop to `0` when traffic stops.
 
 ## Alert
 

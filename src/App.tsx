@@ -59,7 +59,11 @@ export default function App() {
   useEffect(() => {
     const stream = createPacketStream({
       onPackets: ingestBatch,
-      onStats: setStats,
+      onStats: (tick) => {
+        setStats(tick);
+        // Picks up a capture that died on its own (device unplugged…).
+        setRunning(tick.running);
+      },
       onAlerts: (alerts) => {
         ingestAlerts(alerts);
         // Flash the affected remote(s) on the globe and play a sound for

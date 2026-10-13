@@ -19,7 +19,11 @@ INFO packet_eye_agent: packet-eye-agent starting on 127.0.0.1:8088
 INFO packet_eye_agent::enrich::geoip: GeoIP databases loaded
 INFO packet_eye_agent::threats::loader: threat lists loaded: 4445 ranges
 INFO packet_eye_agent: listening on http://127.0.0.1:8088
+INFO packet_eye_agent: dev UI (npm run dev): http://localhost:1420/?token=3f9c…
 ```
+
+Keep that last link: the UI needs its token (see
+[Security](security.md#access-token)).
 
 If you see warnings like *"GeoLite2-City.mmdb not found"*, run
 `npm run fetch-geoip` first.
@@ -36,8 +40,10 @@ cd C:\path\to\packet-eye
 npm run dev
 ```
 
-Vite serves on `http://localhost:1420`. Open that URL in any modern
-browser. The page connects to the agent's WebSocket automatically.
+Vite serves on `http://localhost:1420`. Open the `?token=…` link
+printed by the agent in any modern browser; later visits to the plain
+URL work until the agent restarts with a new token. The page connects
+to the agent's WebSocket automatically.
 
 ## CLI options for the agent
 
@@ -52,6 +58,8 @@ packet-eye-agent --help
   --pcap-buffer-mb <MiB>     raw-frame buffer for the .pcapng export (default 64, 0 = off)
   --ui <DIR>                 serve the web UI from this folder
   --no-ui                    API only
+  --token <TOKEN>            fixed access token (default: random at each start)
+  --no-auth                  disable the access token
 ```
 
 Pages served from `localhost`, `127.0.0.1` or `[::1]` (any port) are
@@ -79,8 +87,8 @@ Then run **only the agent**, as Administrator, from the repo root:
 .\agent\target\release\packet-eye-agent.exe
 ```
 
-The agent auto-detects `dist/` and serves the UI itself — open
-<http://127.0.0.1:8088>. Use `--ui <dir>` to point at another build
+The agent auto-detects `dist/` and serves the UI itself — open the
+`http://127.0.0.1:8088/?token=…` link it prints. Use `--ui <dir>` to point at another build
 folder, or `--no-ui` to expose the API only.
 
 ## Stopping
@@ -88,5 +96,9 @@ folder, or `--no-ui` to expose the API only.
 - Frontend: Ctrl+C in the Vite terminal.
 - Agent: Ctrl+C, or close the elevated terminal. The capture thread
   shuts down cleanly via an `AtomicBool`.
+
+If the capture interface disappears (unplugged, disabled, sleep), the
+capture stops by itself after ~5 s of consecutive errors and the UI
+switches back to *idle*.
 
 Read on for [capture filters](filters.md).

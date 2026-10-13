@@ -49,7 +49,8 @@ via Npcap on Windows.
 - **Firewall** view: block an IP, a range or an app with Windows
   Firewall in one click, and manage those rules.
 - Local-only by design: the agent rejects requests from foreign web
-  origins and DNS-rebinding attempts.
+  origins and DNS-rebinding attempts, and requires an access token
+  (printed at startup) so other local programs can't drive it.
 - Code-split, lazy-loaded SPA with shadcn/ui + Tailwind.
 
 ## Quick start
@@ -84,7 +85,7 @@ In another terminal, run the dev frontend:
 
 ```powershell
 npm run dev
-# -> http://localhost:1420
+# -> open the http://localhost:1420/?token=… link printed by the agent
 ```
 
 Or build once and run a single executable that serves the UI too:
@@ -93,7 +94,7 @@ Or build once and run a single executable that serves the UI too:
 npm run build
 npm run agent:build
 .\agent\target\release\packet-eye-agent.exe   # as Administrator
-# -> http://127.0.0.1:8088
+# -> open the http://127.0.0.1:8088/?token=… link it prints
 ```
 
 For more, see the

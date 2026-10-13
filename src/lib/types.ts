@@ -63,6 +63,8 @@ export interface StatsTick {
   active_connections: number;
   total_packets: number;
   total_bytes: number;
+  /** False once the capture stops — including on its own (device gone). */
+  running: boolean;
 }
 
 export interface StatusResp {

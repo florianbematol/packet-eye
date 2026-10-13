@@ -1054,6 +1054,7 @@ dependencies = [
  "dashmap",
  "directories",
  "etherparse",
+ "getrandom 0.2.17",
  "lru",
  "maxminddb",
  "once_cell",

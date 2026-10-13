@@ -58,6 +58,9 @@ clap = { version = "4", features = ["derive"] }
 # Directories (for %APPDATA%/packet-eye)
 directories = "5"
 
+# Access token generation
+getrandom = "0.2"
+
 [target.'cfg(windows)'.dependencies]
 windows = { version = "0.58", features = [
     "Win32_Foundation",

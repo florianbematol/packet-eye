@@ -1,0 +1,71 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  agent:
+    name: agent (Windows)
+    runs-on: windows-latest
+    env:
+      NPCAP_SDK_VERSION: "1.13"
+      # Same -L as .cargo/config.toml (RUSTFLAGS replaces it), plus a
+      # delay-loaded wpcap.dll: the Npcap runtime can't be installed
+      # silently, and unit tests never call into libpcap.
+      RUSTFLAGS: >-
+        -D warnings
+        -L C:/npcap-sdk/Lib/x64
+        -C link-arg=/DELAYLOAD:wpcap.dll
+        -C link-arg=delayimp.lib
+    defaults:
+      run:
+        working-directory: agent
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: agent
+
+      - name: Install Npcap SDK
+        shell: pwsh
+        run: |
+          $zip = "$env:RUNNER_TEMP\npcap-sdk.zip"
+          Invoke-WebRequest "https://npcap.com/dist/npcap-sdk-$env:NPCAP_SDK_VERSION.zip" -OutFile $zip
+          Expand-Archive $zip -DestinationPath C:\npcap-sdk
+
+      - name: Clippy
+        run: cargo clippy --all-targets --locked
+
+      - name: Test
+        run: cargo test --locked
+
+  web:
+    name: web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Type-check and build
+        run: npm run build

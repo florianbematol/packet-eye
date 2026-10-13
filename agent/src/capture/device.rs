@@ -25,7 +25,7 @@ pub fn list() -> Result<Vec<DeviceInfo>, String> {
                     .iter()
                     .map(|a| a.addr.to_string())
                     .collect(),
-                flags: d.flags.if_flags.bits() as u32,
+                flags: d.flags.if_flags.bits(),
                 is_loopback,
             }
         })

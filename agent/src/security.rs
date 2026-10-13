@@ -107,7 +107,7 @@ impl SecurityConfig {
     /// Is this `Origin` header value allowed?
     pub fn origin_allowed(&self, origin: &str) -> bool {
         let origin = origin.trim().trim_end_matches('/').to_ascii_lowercase();
-        if self.extra_origins.iter().any(|o| *o == origin) {
+        if self.extra_origins.contains(&origin) {
             return true;
         }
         let rest = match origin

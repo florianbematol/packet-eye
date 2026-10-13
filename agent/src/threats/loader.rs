@@ -64,7 +64,7 @@ pub fn load_default() -> Arc<ThreatMatcher> {
     let dir = resolve_dir();
     load_into(&m, &dir);
     m.finalize();
-    if m.len() == 0 {
+    if m.is_empty() {
         tracing::warn!(
             "no threat lists in {} (run `npm run fetch-threats` or update them from the UI)",
             dir.display()

@@ -169,7 +169,7 @@ fn run_loop(
 
 /// Decode a raw frame. Returns the event, the L4 payload (empty when
 /// there is none) and whether an IP layer was found.
-fn parse_packet<'a>(linktype: Linktype, data: &'a [u8], ts_ms: i64) -> (PacketEvent, &'a [u8], bool) {
+fn parse_packet(linktype: Linktype, data: &[u8], ts_ms: i64) -> (PacketEvent, &[u8], bool) {
     // Always try to slice the frame so we can extract whatever layers
     // are present. Failing to parse just means we'll surface the packet
     // with `proto: Other` and zeroed addresses — the raw payload still
@@ -190,7 +190,7 @@ fn parse_packet<'a>(linktype: Linktype, data: &'a [u8], ts_ms: i64) -> (PacketEv
     };
 
     let zero4 = IpAddr::V4(Ipv4Addr::UNSPECIFIED);
-    let has_ip = sliced_opt.as_ref().map_or(false, |s| s.net.is_some());
+    let has_ip = sliced_opt.as_ref().is_some_and(|s| s.net.is_some());
     let (src_ip, dst_ip) = sliced_opt
         .as_ref()
         .and_then(|s| s.net.as_ref())

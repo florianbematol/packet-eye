@@ -1930,7 +1930,10 @@
 <code>{"error": "..."}</code> in the body.</p>
 <p>Every request is checked against the Origin / Host allowlists first;
 rejected requests get <code>403 {"error": "origin not allowed"}</code> (or
-<code>host not allowed</code>). See <a href="../../guide/security/">Security</a>.</p>
+<code>host not allowed</code>). Every route except <code>/api/health</code> also needs the
+access token (<code>Authorization: Bearer &lt;token&gt;</code> or <code>?token=&lt;token&gt;</code>),
+otherwise <code>401 {"error": "missing or invalid token"}</code>. See
+<a href="../../guide/security/">Security</a>.</p>
 <h2 id="health">Health<a class="headerlink" href="#health" title="Permanent link">&para;</a></h2>
 <h3 id="get-apihealth"><code>GET /api/health</code><a class="headerlink" href="#get-apihealth" title="Permanent link">&para;</a></h3>
 <p>Returns the literal string <code>ok</code> (200) when the agent is up.</p>
@@ -1995,10 +1998,11 @@ false }</code>. Idempotent.</p>
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">    </span><span class="nt">"bytes_per_sec"</span><span class="p">:</span><span class="w"> </span><span class="mf">982341.0</span><span class="p">,</span>
 </span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">    </span><span class="nt">"active_connections"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
 </span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">    </span><span class="nt">"total_packets"</span><span class="p">:</span><span class="w"> </span><span class="mi">91234</span><span class="p">,</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">    </span><span class="nt">"total_bytes"</span><span class="p">:</span><span class="w"> </span><span class="mi">12345678</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">  </span><span class="p">},</span>
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">  </span><span class="nt">"running"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
-</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="p">}</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">    </span><span class="nt">"total_bytes"</span><span class="p">:</span><span class="w"> </span><span class="mi">12345678</span><span class="p">,</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">    </span><span class="nt">"running"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">  </span><span class="p">},</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">  </span><span class="nt">"running"</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="p">}</span>
 </span></code></pre></div>
 <p><code>active_connections</code> is left at 0 here — the frontend computes it from
 the live connections map.</p>

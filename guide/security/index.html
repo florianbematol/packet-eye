@@ -871,6 +871,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#access-token" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Access token
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#exposing-the-agent-on-a-lan" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1293,6 +1304,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#access-token" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Access token
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#exposing-the-agent-on-a-lan" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1338,7 +1360,8 @@
 <p>The agent runs as Administrator, captures all your traffic, and can
 change firewall rules. It only listens on <code>127.0.0.1</code>, but that alone
 isn't enough: <strong>any web page open in your browser can send requests to
-<code>127.0.0.1</code></strong>. Two checks run before every request reaches a handler.</p>
+<code>127.0.0.1</code></strong> — and so can any other program on the machine. Three
+checks run before every request reaches a handler.</p>
 <h2 id="origin-allowlist">Origin allowlist<a class="headerlink" href="#origin-allowlist" title="Permanent link">&para;</a></h2>
 <p>Browsers attach an <code>Origin</code> header to cross-site requests and to every
 WebSocket handshake. The agent accepts only:</p>
@@ -1357,16 +1380,41 @@ so the attacker's page becomes "same-origin" with the agent and no
 <code>Origin</code> is sent. The <code>Host</code> header still says <code>evil.example</code>, so the
 agent rejects any <code>Host</code> that isn't loopback, the listen IP, or a name
 passed with <code>--allow-host</code>.</p>
+<h2 id="access-token">Access token<a class="headerlink" href="#access-token" title="Permanent link">&para;</a></h2>
+<p>The two checks above stop web pages, but not local programs: anything
+can send a request without an <code>Origin</code>. Since the agent runs as
+Administrator, an unprivileged program could otherwise add firewall
+rules or download your capture.</p>
+<p>So every <code>/api/*</code> request (except <code>/api/health</code>) and the <code>/ws</code>
+handshake must carry a token, as <code>Authorization: Bearer &lt;token&gt;</code> or
+<code>?token=&lt;token&gt;</code>. Missing or wrong token → <code>401</code>. Static UI files are
+served without it.</p>
+<p>At startup the agent prints a link that contains the token:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>INFO packet_eye_agent: open http://127.0.0.1:8088/?token=3f9c… in your browser
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>INFO packet_eye_agent: dev UI (npm run dev): http://localhost:1420/?token=3f9c…
+</span></code></pre></div>
+<p>Open it once: the UI stores the token in <code>localStorage</code> and removes it
+from the address bar. Unprivileged programs can't read the console of an
+elevated process, which is what makes this work (the same approach as
+Jupyter).</p>
+<ul>
+<li>By default a <strong>new random token is generated at each start</strong>, so the
+  link must be reopened after restarting the agent.</li>
+<li><code>--token &lt;TOKEN&gt;</code> sets a fixed token (16+ characters, <code>A-Z a-z 0-9 - . _ ~</code>)
+  so a bookmark keeps working.</li>
+<li><code>--no-auth</code> disables the check. Only do this on a single-user machine
+  you trust.</li>
+</ul>
 <h2 id="exposing-the-agent-on-a-lan">Exposing the agent on a LAN<a class="headerlink" href="#exposing-the-agent-on-a-lan" title="Permanent link">&para;</a></h2>
-<p>Not recommended — the API has no authentication. If you really want to
+<p>Not recommended — the token travels in clear over HTTP. If you really want to
 open the UI from another machine:</p>
-<div class="language-powershell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">packet-eye-agent</span> <span class="p">-</span><span class="n">-listen</span> <span class="n">0</span><span class="p">.</span><span class="n">0</span><span class="p">.</span><span class="n">0</span><span class="p">.</span><span class="n">0</span><span class="p">:</span><span class="n">8088</span> <span class="p">`</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  <span class="p">-</span><span class="n">-allow-host</span> <span class="n">192</span><span class="p">.</span><span class="n">168</span><span class="p">.</span><span class="n">1</span><span class="p">.</span><span class="n">10</span> <span class="p">`</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>  <span class="p">-</span><span class="n">-allow-origin</span> <span class="n">http</span><span class="p">://</span><span class="n">192</span><span class="p">.</span><span class="n">168</span><span class="p">.</span><span class="n">1</span><span class="p">.</span><span class="n">10</span><span class="p">:</span><span class="n">8088</span>
+<div class="language-powershell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">packet-eye-agent</span> <span class="p">-</span><span class="n">-listen</span> <span class="n">0</span><span class="p">.</span><span class="n">0</span><span class="p">.</span><span class="n">0</span><span class="p">.</span><span class="n">0</span><span class="p">:</span><span class="n">8088</span> <span class="p">`</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>  <span class="p">-</span><span class="n">-allow-host</span> <span class="n">192</span><span class="p">.</span><span class="n">168</span><span class="p">.</span><span class="n">1</span><span class="p">.</span><span class="n">10</span> <span class="p">`</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>  <span class="p">-</span><span class="n">-allow-origin</span> <span class="n">http</span><span class="p">://</span><span class="n">192</span><span class="p">.</span><span class="n">168</span><span class="p">.</span><span class="n">1</span><span class="p">.</span><span class="n">10</span><span class="p">:</span><span class="n">8088</span>
 </span></code></pre></div>
 <p>The agent logs a warning at startup when it isn't bound to loopback.
-Anyone on the network can then read your traffic and change your
-firewall rules.</p>
+Anyone on the network who sees the token can then read your traffic and
+change your firewall rules.</p>
 <h2 id="what-is-stored-on-disk">What is stored on disk<a class="headerlink" href="#what-is-stored-on-disk" title="Permanent link">&para;</a></h2>
 <table>
 <thead>

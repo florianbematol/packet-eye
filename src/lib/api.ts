@@ -58,6 +58,31 @@ const ready: Promise<string> = (async () => {
   return BASE_URL;
 })();
 
+// Access token. The agent prints a `?token=…` link at startup; opening
+// it stores the token (then strips it from the address bar) so later
+// visits work until the agent generates a new one.
+const TOKEN_KEY = "packet-eye.token";
+
+const TOKEN: string | null = (() => {
+  if (typeof window === "undefined") return null;
+  const url = new URL(window.location.href);
+  const fromUrl = url.searchParams.get("token");
+  if (fromUrl) {
+    localStorage.setItem(TOKEN_KEY, fromUrl);
+    url.searchParams.delete("token");
+    window.history.replaceState(null, "", url);
+    return fromUrl;
+  }
+  return localStorage.getItem(TOKEN_KEY);
+})();
+
+function authHeaders(): Record<string, string> {
+  return TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {};
+}
+
+const TOKEN_HINT =
+  "missing or invalid agent token — open the link printed in the agent console";
+
 /** Resolves once the agent base URL has been determined. */
 export function agentReady(): Promise<string> {
   return ready;
@@ -69,9 +94,10 @@ async function request<T>(
 ): Promise<T> {
   await ready;
   const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     ...init,
   });
+  if (res.status === 401) throw new Error(`401: ${TOKEN_HINT}`);
   if (!res.ok) {
     // Read the body exactly once (a Response body can't be consumed
     // twice), then try to interpret it as `{ "error": "..." }`.
@@ -181,7 +207,10 @@ export async function downloadPcapng(flow?: {
   b: string;
 }): Promise<number> {
   await ready;
-  const res = await fetch(`${BASE_URL}/api/export/pcapng${qs(flow ?? {})}`);
+  const res = await fetch(`${BASE_URL}/api/export/pcapng${qs(flow ?? {})}`, {
+    headers: authHeaders(),
+  });
+  if (res.status === 401) throw new Error(TOKEN_HINT);
   if (!res.ok) {
     const raw = await res.text().catch(() => "");
     let msg = raw || res.statusText;
@@ -211,6 +240,8 @@ export function getAgentBaseUrl(): string {
 }
 
 export function getAgentWsUrl(): string {
-  // Convert http(s) -> ws(s).
-  return BASE_URL.replace(/^http/, "ws") + "/ws";
+  // Convert http(s) -> ws(s). Browsers can't set headers on a
+  // WebSocket, so the token goes in the query string.
+  const query = TOKEN ? `?token=${encodeURIComponent(TOKEN)}` : "";
+  return BASE_URL.replace(/^http/, "ws") + "/ws" + query;
 }

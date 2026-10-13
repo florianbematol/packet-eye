@@ -3,7 +3,8 @@
 The agent runs as Administrator, captures all your traffic, and can
 change firewall rules. It only listens on `127.0.0.1`, but that alone
 isn't enough: **any web page open in your browser can send requests to
-`127.0.0.1`**. Two checks run before every request reaches a handler.
+`127.0.0.1`** — and so can any other program on the machine. Three
+checks run before every request reaches a handler.
 
 ## Origin allowlist
 
@@ -27,9 +28,40 @@ so the attacker's page becomes "same-origin" with the agent and no
 agent rejects any `Host` that isn't loopback, the listen IP, or a name
 passed with `--allow-host`.
 
+## Access token
+
+The two checks above stop web pages, but not local programs: anything
+can send a request without an `Origin`. Since the agent runs as
+Administrator, an unprivileged program could otherwise add firewall
+rules or download your capture.
+
+So every `/api/*` request (except `/api/health`) and the `/ws`
+handshake must carry a token, as `Authorization: Bearer <token>` or
+`?token=<token>`. Missing or wrong token → `401`. Static UI files are
+served without it.
+
+At startup the agent prints a link that contains the token:
+
+```
+INFO packet_eye_agent: open http://127.0.0.1:8088/?token=3f9c… in your browser
+INFO packet_eye_agent: dev UI (npm run dev): http://localhost:1420/?token=3f9c…
+```
+
+Open it once: the UI stores the token in `localStorage` and removes it
+from the address bar. Unprivileged programs can't read the console of an
+elevated process, which is what makes this work (the same approach as
+Jupyter).
+
+- By default a **new random token is generated at each start**, so the
+  link must be reopened after restarting the agent.
+- `--token <TOKEN>` sets a fixed token (16+ characters, `A-Z a-z 0-9 - . _ ~`)
+  so a bookmark keeps working.
+- `--no-auth` disables the check. Only do this on a single-user machine
+  you trust.
+
 ## Exposing the agent on a LAN
 
-Not recommended — the API has no authentication. If you really want to
+Not recommended — the token travels in clear over HTTP. If you really want to
 open the UI from another machine:
 
 ```powershell
@@ -39,8 +71,8 @@ packet-eye-agent --listen 0.0.0.0:8088 `
 ```
 
 The agent logs a warning at startup when it isn't bound to loopback.
-Anyone on the network can then read your traffic and change your
-firewall rules.
+Anyone on the network who sees the token can then read your traffic and
+change your firewall rules.
 
 ## What is stored on disk
 

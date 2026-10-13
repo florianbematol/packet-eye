@@ -8,7 +8,7 @@
 //!   - rolling stats.
 
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use parking_lot::Mutex;
 use serde::Serialize;
@@ -35,6 +35,9 @@ pub struct StatsTick {
     pub active_connections: u32,
     pub total_packets: u64,
     pub total_bytes: u64,
+    /// Whether a capture is active (lets clients notice a capture that
+    /// died on its own).
+    pub running: bool,
 }
 
 #[derive(Default)]
@@ -58,6 +61,9 @@ pub struct AppState {
     pub alert_tx: broadcast::Sender<Vec<Alert>>,
     /// Capture runner; `Some` while a capture is active.
     pub runner: Mutex<Option<Runner>>,
+    /// Serialises start/stop so two concurrent requests can't both
+    /// spawn a capture.
+    pub capture_op: tokio::sync::Mutex<()>,
     pub self_cache: Arc<SelfCache>,
     stats: Mutex<StatsAccumulator>,
 }
@@ -83,6 +89,7 @@ impl AppState {
             tx,
             alert_tx,
             runner: Mutex::new(None),
+            capture_op: tokio::sync::Mutex::new(()),
             self_cache: SelfCache::new(),
             stats: Mutex::new(StatsAccumulator::default()),
         }
@@ -94,35 +101,13 @@ impl AppState {
         let n_pkts = batch.len() as u64;
         let n_bytes: u64 = batch.iter().map(|p| p.len as u64).sum();
 
-        // Update stats counters.
+        // Update stats counters (rates are computed by `tick_stats`).
         {
             let mut s = self.stats.lock();
-            let now = Instant::now();
-            if s.last_window_start.is_none() {
-                s.last_window_start = Some(now);
-            }
             s.pkts_window += n_pkts;
             s.bytes_window += n_bytes;
             s.total_packets += n_pkts;
             s.total_bytes += n_bytes;
-
-            let elapsed = now.duration_since(s.last_window_start.unwrap());
-            if elapsed >= Duration::from_millis(1000) {
-                let secs = elapsed.as_secs_f64().max(0.001);
-                s.last_tick = StatsTick {
-                    ts_ms: time::OffsetDateTime::now_utc()
-                        .unix_timestamp_nanos()
-                        .div_euclid(1_000_000) as i64,
-                    packets_per_sec: s.pkts_window as f64 / secs,
-                    bytes_per_sec: s.bytes_window as f64 / secs,
-                    active_connections: 0,
-                    total_packets: s.total_packets,
-                    total_bytes: s.total_bytes,
-                };
-                s.pkts_window = 0;
-                s.bytes_window = 0;
-                s.last_window_start = Some(now);
-            }
         }
 
         // Run alert evaluation on each packet (cheap; mostly hash lookups).
@@ -141,11 +126,49 @@ impl AppState {
         self.tx.send(batch).unwrap_or(0)
     }
 
-    pub fn current_stats(&self) -> StatsTick {
-        self.stats.lock().last_tick
+    /// Close the current rate window. Called every second by a timer, so
+    /// rates drop to zero when traffic stops instead of freezing.
+    pub fn tick_stats(&self) {
+        let running = self.is_running();
+        let mut s = self.stats.lock();
+        let now = Instant::now();
+        let start = *s.last_window_start.get_or_insert(now);
+        let secs = now.duration_since(start).as_secs_f64();
+        if secs < 0.001 {
+            return;
+        }
+        s.last_tick = StatsTick {
+            ts_ms: time::OffsetDateTime::now_utc()
+                .unix_timestamp_nanos()
+                .div_euclid(1_000_000) as i64,
+            packets_per_sec: s.pkts_window as f64 / secs,
+            bytes_per_sec: s.bytes_window as f64 / secs,
+            active_connections: 0,
+            total_packets: s.total_packets,
+            total_bytes: s.total_bytes,
+            running,
+        };
+        s.pkts_window = 0;
+        s.bytes_window = 0;
+        s.last_window_start = Some(now);
     }
 
+    pub fn current_stats(&self) -> StatsTick {
+        StatsTick {
+            running: self.is_running(),
+            ..self.stats.lock().last_tick
+        }
+    }
+
+    /// Is a capture active? Also reaps a runner whose thread exited on
+    /// its own (device unplugged, repeated pcap errors).
     pub fn is_running(&self) -> bool {
-        self.runner.lock().is_some()
+        let mut runner = self.runner.lock();
+        if runner.as_ref().is_some_and(|r| r.is_finished()) {
+            tracing::warn!("capture thread exited unexpectedly");
+            // The thread is already gone, so dropping (= joining) is instant.
+            *runner = None;
+        }
+        runner.is_some()
     }
 }

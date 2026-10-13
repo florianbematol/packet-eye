@@ -81,6 +81,17 @@ pub struct Args {
     /// Disable serving the web UI even if a `dist/` folder is found.
     #[arg(long, default_value_t = false)]
     pub no_ui: bool,
+
+    /// Access token required by the API and WebSocket. Defaults to a
+    /// random token generated at each start and printed in the console.
+    /// Set it to keep the same link across restarts.
+    #[arg(long, value_name = "TOKEN")]
+    pub token: Option<String>,
+
+    /// Disable the access token. Any program on this machine can then
+    /// drive the agent (and its Administrator rights).
+    #[arg(long, default_value_t = false, conflicts_with = "token")]
+    pub no_auth: bool,
 }
 
 /// Find the built frontend. Order: `--ui`, `<cwd>/dist`, `<cwd>/../dist`,
@@ -160,6 +171,7 @@ pub async fn run(args: Args) -> Result<()> {
     ));
 
     spawn_history_tasks(history);
+    spawn_stats_tick(state.clone());
 
     // Build router.
     let mut app = api::router(state.clone());
@@ -181,14 +193,28 @@ pub async fn run(args: Args) -> Result<()> {
     }
 
     // Security: Host + Origin allowlists, and a matching CORS policy.
-    let sec = Arc::new(SecurityConfig::new(args.listen, &args.allow_origins, &args.allow_hosts));
+    let token = match (&args.token, args.no_auth) {
+        (_, true) => {
+            tracing::warn!("--no-auth: the API accepts requests from any local program");
+            None
+        }
+        (Some(t), _) => {
+            security::validate_token(t)?;
+            Some(t.clone())
+        }
+        (None, _) => Some(security::generate_token()?),
+    };
+    let sec = Arc::new(
+        SecurityConfig::new(args.listen, &args.allow_origins, &args.allow_hosts)
+            .with_token(token.clone()),
+    );
     let cors = CorsLayer::new()
         .allow_origin(AllowOrigin::predicate({
             let pred = security::cors_predicate(sec.clone());
             move |origin, _req| pred(origin)
         }))
         .allow_methods([Method::GET, Method::POST, Method::PUT, Method::PATCH, Method::DELETE])
-        .allow_headers([header::CONTENT_TYPE])
+        .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION])
         .expose_headers([
             header::CONTENT_DISPOSITION,
             header::HeaderName::from_static("x-packet-count"),
@@ -200,11 +226,26 @@ pub async fn run(args: Args) -> Result<()> {
 
     let listener = TcpListener::bind(args.listen).await?;
     tracing::info!("listening on http://{}", args.listen);
+    let query = token.as_deref().map(|t| format!("/?token={t}")).unwrap_or_default();
     if ui_dir.is_some() {
-        tracing::info!("open http://{} in your browser", args.listen);
+        tracing::info!("open http://{}{query} in your browser", args.listen);
+    }
+    if token.is_some() {
+        tracing::info!("dev UI (npm run dev): http://localhost:1420{query}");
     }
     axum::serve(listener, app).await?;
     Ok(())
+}
+
+/// Close the stats rate window every second, traffic or not.
+fn spawn_stats_tick(state: Arc<AppState>) {
+    tokio::spawn(async move {
+        let mut tick = tokio::time::interval(Duration::from_secs(1));
+        loop {
+            tick.tick().await;
+            state.tick_stats();
+        }
+    });
 }
 
 /// Flush the history aggregate every 10 s and purge old rows hourly.

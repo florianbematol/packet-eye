@@ -9,7 +9,7 @@ use axum::Json;
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 
-use super::error::ApiError;
+use super::error::{blocking, ApiError};
 use crate::capture::bpf::CaptureFilter;
 use crate::capture::device::{self, DeviceInfo};
 use crate::capture::runner::{CaptureHooks, Runner};
@@ -56,6 +56,8 @@ pub async fn start_capture(
     State(state): State<Arc<AppState>>,
     Json(req): Json<StartReq>,
 ) -> Result<Json<StatusResp>, ApiError> {
+    // Held until the runner is stored, so a concurrent start sees it.
+    let _op = state.capture_op.lock().await;
     if state.is_running() {
         return Err(ApiError::new(
             StatusCode::CONFLICT,
@@ -83,8 +85,11 @@ pub async fn start_capture(
         sniffer: state.enricher.domains.clone(),
         ring: state.pcap.clone(),
     };
-    let runner = Runner::spawn(&req.device, &req.filter, hooks, on_packet)
-        .map_err(ApiError::msg)?;
+    // Listing devices and opening the adapter block for a while.
+    let runner = blocking(move || {
+        Runner::spawn(&req.device, &req.filter, hooks, on_packet).map_err(ApiError::msg)
+    })
+    .await?;
 
     *state.runner.lock() = Some(runner);
 
@@ -122,11 +127,18 @@ pub async fn start_capture(
 
 pub async fn stop_capture(
     State(state): State<Arc<AppState>>,
-) -> Json<StatusResp> {
-    if let Some(mut r) = state.runner.lock().take() {
-        r.stop();
+) -> Result<Json<StatusResp>, ApiError> {
+    let _op = state.capture_op.lock().await;
+    let runner = state.runner.lock().take();
+    if let Some(mut r) = runner {
+        // Joining the capture thread can take up to one pcap timeout.
+        blocking(move || {
+            r.stop();
+            Ok(())
+        })
+        .await?;
     }
-    Json(StatusResp { running: false })
+    Ok(Json(StatusResp { running: false }))
 }
 
 // ---- Tiny ring-style buffer used by start_capture ----

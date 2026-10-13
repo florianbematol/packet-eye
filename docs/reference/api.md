@@ -7,7 +7,10 @@ All responses are JSON. Errors come back with an HTTP status ≥ 400 and
 
 Every request is checked against the Origin / Host allowlists first;
 rejected requests get `403 {"error": "origin not allowed"}` (or
-`host not allowed`). See [Security](../guide/security.md).
+`host not allowed`). Every route except `/api/health` also needs the
+access token (`Authorization: Bearer <token>` or `?token=<token>`),
+otherwise `401 {"error": "missing or invalid token"}`. See
+[Security](../guide/security.md).
 
 ## Health
 
@@ -99,7 +102,8 @@ Returns `{ "running": true|false }`.
     "bytes_per_sec": 982341.0,
     "active_connections": 0,
     "total_packets": 91234,
-    "total_bytes": 12345678
+    "total_bytes": 12345678,
+    "running": true
   },
   "running": true
 }

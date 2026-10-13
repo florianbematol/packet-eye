@@ -95,6 +95,12 @@ impl Runner {
         })
     }
 
+    /// `true` once the capture thread has exited on its own (device
+    /// gone, too many pcap errors…) or after [`Runner::stop`].
+    pub fn is_finished(&self) -> bool {
+        self.join.as_ref().map_or(true, |h| h.is_finished())
+    }
+
     pub fn stop(&mut self) {
         self.stop.store(true, Ordering::SeqCst);
         if let Some(h) = self.join.take() {
@@ -109,6 +115,10 @@ impl Drop for Runner {
     }
 }
 
+/// Consecutive pcap errors (100 ms apart) after which the capture gives
+/// up — typically the interface was unplugged or disabled.
+const MAX_CONSECUTIVE_ERRORS: u32 = 50;
+
 fn run_loop(
     mut cap: Capture<pcap::Active>,
     linktype: Linktype,
@@ -117,10 +127,12 @@ fn run_loop(
     on_packet: PacketCallback,
 ) {
     let mut errors = 0u64;
+    let mut consecutive = 0u32;
     let mut total = 0u64;
     while !stop.load(Ordering::Relaxed) {
         match cap.next_packet() {
             Ok(packet) => {
+                consecutive = 0;
                 total += 1;
                 let ts_us = (packet.header.ts.tv_sec as i64) * 1_000_000
                     + packet.header.ts.tv_usec as i64;
@@ -133,15 +145,22 @@ fn run_loop(
                 }
                 on_packet(evt);
             }
-            Err(pcap::Error::TimeoutExpired) => continue,
+            Err(pcap::Error::TimeoutExpired) => consecutive = 0,
             Err(pcap::Error::NoMorePackets) => break,
             Err(e) => {
                 errors += 1;
+                consecutive += 1;
+                if consecutive >= MAX_CONSECUTIVE_ERRORS {
+                    tracing::error!("capture stopped after {consecutive} consecutive errors: {e}");
+                    break;
+                }
                 if errors < 10 {
                     tracing::warn!("pcap error: {e}");
                 } else if errors == 10 {
                     tracing::warn!("pcap errors: muting further messages");
                 }
+                // Don't spin: a dead device fails instantly, every time.
+                thread::sleep(std::time::Duration::from_millis(100));
             }
         }
     }

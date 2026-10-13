@@ -126,8 +126,10 @@ mod tests {
 
     #[test]
     fn custom_is_appended() {
-        let mut f = CaptureFilter::default();
-        f.custom = Some("tcp port 443".into());
+        let f = CaptureFilter {
+            custom: Some("tcp port 443".into()),
+            ..Default::default()
+        };
         let bpf = f.to_bpf();
         assert!(bpf.ends_with("(tcp port 443)"));
     }

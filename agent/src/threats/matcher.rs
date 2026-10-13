@@ -104,6 +104,10 @@ impl ThreatMatcher {
         self.ranges.read().len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.ranges.read().is_empty()
+    }
+
     pub fn lookup(&self, ip: &IpAddr) -> Option<Verdict> {
         let key = ip_to_u128(ip);
         let ranges = self.ranges.read();

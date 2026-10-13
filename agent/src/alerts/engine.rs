@@ -276,7 +276,7 @@ fn load_rules_or_default(path: &std::path::Path) -> AlertRules {
 
 fn save_rules(path: &std::path::Path, rules: &AlertRules) -> std::io::Result<()> {
     let json = serde_json::to_vec_pretty(rules)
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+        .map_err(std::io::Error::other)?;
     std::fs::write(path, json)
 }
 

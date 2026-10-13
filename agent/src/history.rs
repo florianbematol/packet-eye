@@ -157,7 +157,7 @@ impl RangeQuery {
             .as_deref()
             .map(str::trim)
             .filter(|s| !s.is_empty())
-            .map(|s| format!("%{}%", s.replace('%', "").replace('_', "")))
+            .map(|s| format!("%{}%", s.replace(['%', '_'], "")))
     }
 }
 
